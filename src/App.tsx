@@ -64,14 +64,10 @@ export default function App() {
   }, []); // Empty dependency array ensures this runs once on mount
 
   useEffect(() => {
-    if (!loading) {
-      console.log(auth.currentUser);
-      if (!auth.currentUser) {
-        //signInWithEmailAndPassword(auth, "bllkinventory@gmail.com", "test2273");
-      }
+    if (!loading && user) {
       fetchMeds().then((d) => setMeds(d));
     }
-  }, [loading]);
+  }, [user]);
 
   if (loading) {
     return <div>Loading authentication status...</div>;
@@ -81,24 +77,26 @@ export default function App() {
     return (
       <>
         <NavBar setCurrentUser={setCurrentUser} setPage={setPage}></NavBar>
-        <Container>
-          <Row>
-            {Object.values(meds).map((med) => (
-              <Col
-                key={med.getId()}
-                className="mb-3"
-                xs={12}
-                sm={12}
-                md={6}
-                lg={6}
-                xl={4}
-                xxl={3}
-              >
-                <MedCard>{med}</MedCard>
-              </Col>
-            ))}
-          </Row>
-        </Container>
+        {page === "home" && (
+          <Container>
+            <Row>
+              {Object.values(meds).map((med) => (
+                <Col
+                  key={med.getId()}
+                  className="mb-3"
+                  xs={12}
+                  sm={12}
+                  md={6}
+                  lg={6}
+                  xl={4}
+                  xxl={3}
+                >
+                  <MedCard>{med}</MedCard>
+                </Col>
+              ))}
+            </Row>
+          </Container>
+        )}
       </>
     );
   } else {
