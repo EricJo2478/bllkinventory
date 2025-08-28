@@ -15,6 +15,10 @@ export default function LoginForm({ setCurrentUser }: Props) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
+    console.log(
+      (payload.username as string) + "@bllk.inv",
+      payload.password as string
+    );
     signInWithEmailAndPassword(
       auth,
       (payload.username as string) + "@bllk.inv",
