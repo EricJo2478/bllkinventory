@@ -31,8 +31,12 @@ export default class Med {
     this.id = id;
     this.name = name;
     for (const entry of entries) {
-      const date = entry.date.toDate().toISOString().slice(0, 10); // format timestamp to string date
-      this.entries.push(new MedEntry(this, date, entry.amount));
+      if (entry.date) {
+        const date = entry.date.toDate().toISOString().slice(0, 10); // format timestamp to string date
+        this.entries.push(new MedEntry(this, date, entry.amount));
+      } else {
+        this.entries.push(new MedEntry(this, "", entry.amount));
+      }
     }
   }
 
