@@ -12,6 +12,8 @@ import { useEffect, useState } from "react";
 import MedCard from "./components/MedCard";
 import { Col, Container, Row } from "react-bootstrap";
 import Med from "./components/Med";
+import NavBar from "./components/NavBar";
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -25,14 +27,12 @@ const firebaseConfig = {
   appId: "1:803086724359:web:dcb95778290927a225e9a2",
 };
 
-// toISOString().slice(0, 10) // formate date to string
-
 async function fetchMeds() {
-  const dataSet: KeyList = {};
+  const dataSet: KeyList<Med> = {};
   const data = await getDocs(collection(database, "meds"));
   for (const doc of data.docs) {
     const docData = doc.data();
-    dataSet[doc.id] = new Med(doc.id, docData.name);
+    dataSet[doc.id] = new Med(doc.id, docData.name, docData.entries);
   }
   return dataSet;
 }
@@ -42,14 +42,15 @@ const app = initializeApp(firebaseConfig);
 export const database = getFirestore(app);
 const auth = getAuth(app);
 
-export interface KeyList {
-  [key: string]: any;
+export interface KeyList<T> {
+  [key: string]: T;
 }
 
 export default function App() {
-  const [meds, setMeds] = useState({} as KeyList);
+  const [meds, setMeds] = useState({} as KeyList<Med>);
   const [, setCurrentUser] = useState(null as User | null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState("home");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -76,7 +77,7 @@ export default function App() {
 
   return (
     <>
-      <h1>Bllk Meds</h1>
+      <NavBar setPage={setPage}></NavBar>
       <Container>
         <Row>
           {Object.values(meds).map((med) => (
@@ -87,6 +88,8 @@ export default function App() {
               sm={12}
               md={6}
               lg={6}
+              xl={4}
+              xxl={3}
             >
               <MedCard>{med}</MedCard>
             </Col>
