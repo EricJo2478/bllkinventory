@@ -13,6 +13,7 @@ import MedCard from "./components/MedCard";
 import { Col, Container, Row } from "react-bootstrap";
 import Med from "./components/Med";
 import NavBar from "./components/NavBar";
+import LoginForm from "./components/LoginForm";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -40,7 +41,7 @@ async function fetchMeds() {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const database = getFirestore(app);
-const auth = getAuth(app);
+export const auth = getAuth(app);
 
 export interface KeyList<T> {
   [key: string]: T;
@@ -48,7 +49,7 @@ export interface KeyList<T> {
 
 export default function App() {
   const [meds, setMeds] = useState({} as KeyList<Med>);
-  const [, setCurrentUser] = useState(null as User | null);
+  const [user, setCurrentUser] = useState(null as User | null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState("home");
 
@@ -66,7 +67,7 @@ export default function App() {
     if (!loading) {
       console.log(auth.currentUser);
       if (!auth.currentUser) {
-        signInWithEmailAndPassword(auth, "bllkinventory@gmail.com", "test2273");
+        //signInWithEmailAndPassword(auth, "bllkinventory@gmail.com", "test2273");
       }
       fetchMeds().then((d) => setMeds(d));
     }
@@ -76,27 +77,36 @@ export default function App() {
     return <div>Loading authentication status...</div>;
   }
 
-  return (
-    <>
-      <NavBar setPage={setPage}></NavBar>
-      <Container>
-        <Row>
-          {Object.values(meds).map((med) => (
-            <Col
-              key={med.getId()}
-              className="mb-3"
-              xs={12}
-              sm={12}
-              md={6}
-              lg={6}
-              xl={4}
-              xxl={3}
-            >
-              <MedCard>{med}</MedCard>
-            </Col>
-          ))}
-        </Row>
-      </Container>
-    </>
-  );
+  if (user) {
+    return (
+      <>
+        <NavBar setCurrentUser={setCurrentUser} setPage={setPage}></NavBar>
+        <Container>
+          <Row>
+            {Object.values(meds).map((med) => (
+              <Col
+                key={med.getId()}
+                className="mb-3"
+                xs={12}
+                sm={12}
+                md={6}
+                lg={6}
+                xl={4}
+                xxl={3}
+              >
+                <MedCard>{med}</MedCard>
+              </Col>
+            ))}
+          </Row>
+        </Container>
+      </>
+    );
+  } else {
+    return (
+      <>
+        <LoginForm setCurrentUser={setCurrentUser}></LoginForm>
+        <NavBar setCurrentUser={setCurrentUser} setPage={setPage}></NavBar>
+      </>
+    );
+  }
 }

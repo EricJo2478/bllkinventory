@@ -1,10 +1,13 @@
-import { Container, Nav, Navbar } from "react-bootstrap";
+import { Button, Container, Nav, Navbar } from "react-bootstrap";
+import { auth } from "../App";
+import { signOut } from "firebase/auth";
 
 interface Props {
   setPage: Function;
+  setCurrentUser: Function;
 }
 
-export default function NavBar({ setPage }: Props) {
+export default function NavBar({ setPage, setCurrentUser }: Props) {
   const pages = ["Home"];
 
   return (
@@ -31,6 +34,15 @@ export default function NavBar({ setPage }: Props) {
               </Nav.Link>
             ))}
           </Nav>
+          <Button
+            onClick={() => {
+              setCurrentUser(null);
+              signOut(auth);
+            }}
+            type="button"
+          >
+            Log Out
+          </Button>
         </Navbar.Collapse>
       </Container>
     </Navbar>
