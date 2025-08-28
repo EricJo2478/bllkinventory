@@ -81,16 +81,7 @@ export default function App() {
           <Container>
             <Row>
               {Object.values(meds).map((med) => (
-                <Col
-                  key={med.getId()}
-                  className="mb-3"
-                  xs={12}
-                  sm={12}
-                  md={6}
-                  lg={6}
-                  xl={4}
-                  xxl={3}
-                >
+                <Col key={med.getId()} className="mb-3">
                   <MedCard>{med}</MedCard>
                 </Col>
               ))}

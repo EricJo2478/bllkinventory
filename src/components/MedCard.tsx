@@ -25,7 +25,7 @@ export default function MedCard({ children }: Props) {
     handleNewEntry();
   } else {
     return (
-      <Card className="h-100">
+      <Card className="h-100" style={{ width: "18rem" }}>
         <Card.Body className="d-flex flex-column">
           <Card.Title>{children.getName()}</Card.Title>
           {entries.map((entry) => (
