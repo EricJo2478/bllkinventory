@@ -28,11 +28,6 @@ const firebaseConfig = {
   appId: "1:803086724359:web:dcb95778290927a225e9a2",
 };
 
-function compareMeds(a: any, b: any) {
-  console.log(a[1]);
-  return a[1].compare(b[1]);
-}
-
 async function fetchMeds() {
   const dataSet: KeyList<Med> = {};
   const data = await getDocs(collection(database, "meds"));
@@ -46,7 +41,7 @@ async function fetchMeds() {
     );
   }
   const entries = Object.entries(dataSet);
-  entries.sort(compareMeds);
+  entries.sort((a, b) => a[1].compare(b[1]));
   const sortedData = Object.fromEntries(entries);
   return sortedData;
 }
