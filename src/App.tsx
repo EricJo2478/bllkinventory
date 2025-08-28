@@ -64,6 +64,7 @@ export default function App() {
 
   useEffect(() => {
     if (!loading) {
+      console.log(auth.currentUser);
       if (!auth.currentUser) {
         signInWithEmailAndPassword(auth, "bllkinventory@gmail.com", "test2273");
       }
