@@ -46,6 +46,16 @@ export default function MedCard({ children }: Props) {
     setEntries([...entries]);
   };
 
+  const getTotal = () => {
+    let total = 0;
+    for (const entry of entries) {
+      if (entry.getDate() > new Date()) {
+        total = total + entry.amount;
+      }
+    }
+    return total;
+  };
+
   if (entries.length === 0) {
     handleNewEntry();
   } else {
@@ -54,6 +64,10 @@ export default function MedCard({ children }: Props) {
         <Card className="h-100" style={{ width: "18rem" }}>
           <Card.Body className="d-flex flex-column">
             <Card.Title>{children.getName()}</Card.Title>
+            <Card.Subtitle className="d-flex justify-content-around">
+              <p>Total: {getTotal()}</p>
+              <p>Ordered: 0</p>
+            </Card.Subtitle>
             {entries.map((entry) => (
               <MedField
                 onChange={handelEntryChange}
