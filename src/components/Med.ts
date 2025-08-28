@@ -21,15 +21,18 @@ export class MedEntry {
 export default class Med {
   private readonly id: string;
   private readonly name: string;
+  private readonly group: string;
   private entries: MedEntry[] = [];
 
   constructor(
     id: string,
     name: string,
+    group: string,
     entries: { date: any; amount: number }[]
   ) {
     this.id = id;
     this.name = name;
+    this.group = group;
     for (const entry of entries) {
       if (entry.date) {
         const date = entry.date.toDate().toISOString().slice(0, 10); // format timestamp to string date
@@ -38,6 +41,17 @@ export default class Med {
         this.entries.push(new MedEntry(this, "", entry.amount));
       }
     }
+  }
+
+  compare(other: Med) {
+    if (this.getGroup() === other.getGroup()) {
+      return this.getName().localeCompare(other.getName());
+    }
+    return this.getGroup().localeCompare(other.getGroup());
+  }
+
+  getGroup() {
+    return this.group;
   }
 
   getName() {

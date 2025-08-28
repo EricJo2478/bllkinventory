@@ -28,14 +28,27 @@ const firebaseConfig = {
   appId: "1:803086724359:web:dcb95778290927a225e9a2",
 };
 
+function compareMeds(a: any, b: any) {
+  console.log(a[1]);
+  return a[1].compare(b[1]);
+}
+
 async function fetchMeds() {
   const dataSet: KeyList<Med> = {};
   const data = await getDocs(collection(database, "meds"));
   for (const doc of data.docs) {
     const docData = doc.data();
-    dataSet[doc.id] = new Med(doc.id, docData.name, docData.entries);
+    dataSet[doc.id] = new Med(
+      doc.id,
+      docData.name,
+      docData.group,
+      docData.entries
+    );
   }
-  return dataSet;
+  const entries = Object.entries(dataSet);
+  entries.sort(compareMeds);
+  const sortedData = Object.fromEntries(entries);
+  return sortedData;
 }
 
 // Initialize Firebase
