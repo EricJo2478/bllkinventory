@@ -1,10 +1,30 @@
 import { v4 as uuidv4 } from "uuid";
+import { database, KeyList } from "../App";
+import { collection, getDocs } from "firebase/firestore";
+
+export async function fetchMeds() {
+  const dataSet: KeyList<Med> = {};
+  const data = await getDocs(collection(database, "meds"));
+  for (const doc of data.docs) {
+    const docData = doc.data();
+    dataSet[doc.id] = new Med(
+      doc.id,
+      docData.name,
+      docData.group,
+      docData.entries
+    );
+  }
+  const entries = Object.entries(dataSet);
+  entries.sort((a, b) => a[1].compare(b[1]));
+  const sortedData = Object.fromEntries(entries);
+  return sortedData;
+}
 
 export class MedEntry {
+  readonly id: string;
   readonly med: Med;
   date: string;
   amount: number;
-  readonly id: string;
 
   constructor(med: Med, date: string = "", amount: number = 0) {
     this.med = med;
@@ -23,6 +43,7 @@ export default class Med {
   private readonly name: string;
   private readonly group: string;
   private entries: MedEntry[] = [];
+  onOrder: number = 0;
 
   constructor(
     id: string,

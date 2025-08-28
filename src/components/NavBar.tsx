@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function NavBar({ setPage, setCurrentUser }: Props) {
-  const pages = ["Home"];
+  const pages = ["Home", "Orders"];
 
   return (
     <Navbar expand="lg" className="bg-body-tertiary mb-5">

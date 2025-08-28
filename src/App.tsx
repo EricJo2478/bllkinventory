@@ -10,10 +10,20 @@ import {
 import { initializeApp } from "firebase/app";
 import { useEffect, useState } from "react";
 import MedCard from "./components/MedCard";
-import { Col, Container, Row } from "react-bootstrap";
-import Med from "./components/Med";
+import {
+  Accordion,
+  Badge,
+  Button,
+  Card,
+  Col,
+  Container,
+  Row,
+  useAccordionButton,
+} from "react-bootstrap";
+import Med, { fetchMeds } from "./components/Med";
 import NavBar from "./components/NavBar";
 import LoginForm from "./components/LoginForm";
+import Order, { fetchOrders } from "./components/Order";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -28,24 +38,6 @@ const firebaseConfig = {
   appId: "1:803086724359:web:dcb95778290927a225e9a2",
 };
 
-async function fetchMeds() {
-  const dataSet: KeyList<Med> = {};
-  const data = await getDocs(collection(database, "meds"));
-  for (const doc of data.docs) {
-    const docData = doc.data();
-    dataSet[doc.id] = new Med(
-      doc.id,
-      docData.name,
-      docData.group,
-      docData.entries
-    );
-  }
-  const entries = Object.entries(dataSet);
-  entries.sort((a, b) => a[1].compare(b[1]));
-  const sortedData = Object.fromEntries(entries);
-  return sortedData;
-}
-
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const database = getFirestore(app);
@@ -57,6 +49,7 @@ export interface KeyList<T> {
 
 export default function App() {
   const [meds, setMeds] = useState({} as KeyList<Med>);
+  const [orders, setOrders] = useState({} as KeyList<Order>);
   const [user, setCurrentUser] = useState(null as User | null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState("home");
@@ -73,7 +66,10 @@ export default function App() {
 
   useEffect(() => {
     if (!loading && user) {
-      fetchMeds().then((d) => setMeds(d));
+      fetchMeds().then((d) => {
+        setMeds(d);
+        fetchOrders(d).then((d) => setOrders(d));
+      });
     }
   }, [user]);
 
@@ -96,6 +92,25 @@ export default function App() {
             </Row>
           </Container>
         )}
+        {page === "orders" && (
+          <Accordion>
+            {Object.values(orders).map((order, index) => (
+              <Card key={order.getId()}>
+                <OrderHeader
+                  onButtonClick={() =>
+                    order.receive(() => setOrders({ ...orders }))
+                  }
+                  eventKey={index.toString()}
+                >
+                  {order}
+                </OrderHeader>
+                <Accordion.Collapse eventKey={index.toString()}>
+                  <Card.Body>{order.getContent()}</Card.Body>
+                </Accordion.Collapse>
+              </Card>
+            ))}
+          </Accordion>
+        )}
       </>
     );
   } else {
@@ -106,4 +121,38 @@ export default function App() {
       </>
     );
   }
+}
+
+interface HeaderProps {
+  children: Order;
+  eventKey: string;
+  onButtonClick: (e: any) => void;
+}
+
+function OrderHeader({ children, eventKey, onButtonClick }: HeaderProps) {
+  const decoratedOnClick = useAccordionButton(eventKey);
+  return (
+    <Card.Header>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div
+          onClick={decoratedOnClick}
+          style={{ flexGrow: 1, cursor: "pointer" }}
+        >
+          {children.getDateString()}
+          <Badge bg={children.getStatusColour()} className="ms-3">
+            {children.getStatus()}
+          </Badge>
+        </div>
+        <Button variant="secondary" onClick={onButtonClick}>
+          Receive
+        </Button>
+      </div>
+    </Card.Header>
+  );
 }

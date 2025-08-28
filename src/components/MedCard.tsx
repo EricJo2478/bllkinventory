@@ -66,7 +66,7 @@ export default function MedCard({ children }: Props) {
             <Card.Title>{children.getName()}</Card.Title>
             <Card.Subtitle className="d-flex justify-content-around">
               <p>Total: {getTotal()}</p>
-              <p>Ordered: 0</p>
+              <p>Ordered: {children.onOrder}</p>
             </Card.Subtitle>
             {entries.map((entry) => (
               <MedField
