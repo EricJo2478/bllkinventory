@@ -25,8 +25,8 @@ export default function MedCard({ children }: Props) {
     handleNewEntry();
   } else {
     return (
-      <Card>
-        <Card.Body>
+      <Card className="h-100">
+        <Card.Body className="d-flex flex-column">
           <Card.Title>{children.getName()}</Card.Title>
           {entries.map((entry) => (
             <MedField
@@ -38,7 +38,11 @@ export default function MedCard({ children }: Props) {
               {entry}
             </MedField>
           ))}
-          <Button className="w-100" color="blue" onClick={handleNewEntry}>
+          <Button
+            className="w-100 mt-auto"
+            color="blue"
+            onClick={handleNewEntry}
+          >
             +
           </Button>
         </Card.Body>
