@@ -1,4 +1,11 @@
-import { Button, Form, InputGroup, Modal } from "react-bootstrap";
+import {
+  Button,
+  Form,
+  InputGroup,
+  Modal,
+  OverlayTrigger,
+  Tooltip,
+} from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
 import { MedEntry } from "./Med";
 import { useState } from "react";
@@ -72,6 +79,24 @@ export default function MedField({ onChange, children, onDelete }: Props) {
     setShowDelete(false);
   };
 
+  const isExpired = () => {
+    if (date === "") {
+      return false;
+    }
+    return new Date(date) <= new Date();
+  };
+
+  const renderExpiryTooltip = (props: any) => {
+    if (isExpired()) {
+      return (
+        <Tooltip {...props}>
+          Panic!
+          <br /> This is expired!
+        </Tooltip>
+      );
+    }
+  };
+
   return (
     <>
       {showDelete && (
@@ -80,25 +105,43 @@ export default function MedField({ onChange, children, onDelete }: Props) {
           onDelete={onDelete}
         ></DeleteModal>
       )}
-      <Form.Group className="mb-3" controlId="fromDate">
-        <InputGroup>
-          <Form.Control
-            className="w-50"
-            type="date"
-            value={date}
-            onChange={handleDateChange}
-          />
-          <Form.Control
-            className="w-25"
-            type="number"
-            value={amount}
-            onChange={handleAmountChange}
-          />
-          <Button variant="outline-secondary" onClick={handleDelete}>
-            <Trash />
-          </Button>
-        </InputGroup>
-      </Form.Group>
+      <Form>
+        <Form.Group className="mb-3" controlId="fromDate">
+          <InputGroup>
+            {isExpired() ? (
+              <OverlayTrigger
+                placement="left"
+                delay={{ show: 250, hide: 400 }}
+                overlay={renderExpiryTooltip}
+              >
+                <Form.Control
+                  className={"w-50 bg-danger"}
+                  type="date"
+                  value={date}
+                  onChange={handleDateChange}
+                />
+              </OverlayTrigger>
+            ) : (
+              <Form.Control
+                className={"w-50"}
+                type="date"
+                value={date}
+                onChange={handleDateChange}
+              />
+            )}
+
+            <Form.Control
+              className="w-25"
+              type="number"
+              value={amount}
+              onChange={handleAmountChange}
+            />
+            <Button variant="outline-secondary" onClick={handleDelete}>
+              <Trash />
+            </Button>
+          </InputGroup>
+        </Form.Group>
+      </Form>
     </>
   );
 }
