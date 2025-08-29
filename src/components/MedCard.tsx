@@ -11,7 +11,6 @@ interface Props {
 
 export default function MedCard({ children }: Props) {
   const [entries, setEntries] = useState(children.getEntries());
-  const docRef = doc(database, "meds", children.getId());
 
   useEffect(() => {
     const docEntries = [];
@@ -28,7 +27,7 @@ export default function MedCard({ children }: Props) {
         });
       }
     }
-    updateDoc(docRef, { entries: docEntries });
+    updateDoc(children.getRef(), { entries: docEntries });
   }, [entries]);
 
   const handleNewEntry = () => {
@@ -42,7 +41,7 @@ export default function MedCard({ children }: Props) {
     setEntries(entries.filter((item) => item.id !== idToDelete));
   };
 
-  const handelEntryChange = () => {
+  const handleEntryChange = () => {
     setEntries([...entries]);
   };
 
@@ -70,7 +69,7 @@ export default function MedCard({ children }: Props) {
             </Card.Subtitle>
             {entries.map((entry) => (
               <MedField
-                onChange={handelEntryChange}
+                onChange={handleEntryChange}
                 key={entry.id}
                 onDelete={() => {
                   handleDeleteEntry(entry.id);

@@ -45,20 +45,25 @@ function DeleteModal({ handleClose, onDelete }: ModalProps) {
 }
 
 export default function MedField({ onChange, children, onDelete }: Props) {
-  const [amount, setAmount] = useState(children.amount);
+  const [amount, setAmount] = useState(
+    (children.amount as number) || undefined
+  );
   const [date, setDate] = useState(children.date);
   const [showDelete, setShowDelete] = useState(false);
 
   const handleAmountChange = (e: any) => {
-    const value = Number(e.target.value);
-    if (value < 0) {
+    const value = e.target.value;
+    const Parsedvalue = Number(value);
+    if (isNaN(Parsedvalue) || value === "") {
+      setAmount(undefined);
+    } else if (Parsedvalue < 0) {
       children.amount = 0;
       setAmount(0);
     } else {
-      children.amount = value;
-      setAmount(value);
+      children.amount = Parsedvalue;
+      setAmount(Parsedvalue);
+      onChange();
     }
-    onChange();
   };
 
   const handleDateChange = (e: any) => {
@@ -68,10 +73,10 @@ export default function MedField({ onChange, children, onDelete }: Props) {
   };
 
   const handleDelete = () => {
-    if (amount === 0) {
-      onDelete();
-    } else {
+    if (amount) {
       setShowDelete(true);
+    } else {
+      onDelete();
     }
   };
 
@@ -133,8 +138,9 @@ export default function MedField({ onChange, children, onDelete }: Props) {
             <Form.Control
               className="w-25"
               type="number"
-              value={amount}
+              value={amount === undefined ? "" : amount}
               onChange={handleAmountChange}
+              min="0"
             />
             <Button variant="outline-secondary" onClick={handleDelete}>
               <Trash />

@@ -1,5 +1,11 @@
 import { database, KeyList } from "../App";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import Med from "./Med";
 
 export async function fetchOrders(meds: KeyList<Med>) {
@@ -29,6 +35,7 @@ export default class Order {
   readonly date: Date;
   readonly entries: { med: Med; amount: number }[];
   status: string;
+  readonly docRef;
 
   constructor(
     id: string,
@@ -39,6 +46,7 @@ export default class Order {
     this.id = id;
     this.date = date;
     this.status = status;
+    this.docRef = doc(database, "orders", this.id);
 
     this.entries = entries;
 
@@ -78,11 +86,15 @@ export default class Order {
   }
 
   getContent() {
-    let output = "";
+    let output = [];
     for (const entry of this.entries) {
-      output = output + entry.med.getName() + ": x" + entry.amount + "\n";
+      output.push(entry.med.getName() + ": x" + entry.amount);
     }
     return output;
+  }
+
+  isReceived() {
+    return this.status === "Received";
   }
 
   receive(reload: () => void) {
@@ -93,6 +105,8 @@ export default class Order {
     }
     this.status = "Received";
     reload();
+
+    updateDoc(this.docRef, { status: "Received" });
   }
 
   compare(other: Order) {

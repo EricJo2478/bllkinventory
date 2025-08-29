@@ -5,10 +5,14 @@ import { signOut } from "firebase/auth";
 interface Props {
   setPage: Function;
   setCurrentUser: Function;
+  admin: boolean;
 }
 
-export default function NavBar({ setPage, setCurrentUser }: Props) {
+export default function NavBar({ setPage, setCurrentUser, admin }: Props) {
   const pages = ["Home", "Orders"];
+  if (admin) {
+    pages.push("Meds");
+  }
 
   return (
     <Navbar expand="lg" className="bg-body-tertiary mb-5">

@@ -24,6 +24,7 @@ import Med, { fetchMeds } from "./components/Med";
 import NavBar from "./components/NavBar";
 import LoginForm from "./components/LoginForm";
 import Order, { fetchOrders } from "./components/Order";
+import MedSettings from "./components/MedSettings";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -80,7 +81,11 @@ export default function App() {
   if (user) {
     return (
       <>
-        <NavBar setCurrentUser={setCurrentUser} setPage={setPage}></NavBar>
+        <NavBar
+          admin={user.email === "admin@bllk.inv"}
+          setCurrentUser={setCurrentUser}
+          setPage={setPage}
+        ></NavBar>
         {page === "home" && (
           <Container>
             <Row>
@@ -97,6 +102,7 @@ export default function App() {
             {Object.values(orders).map((order, index) => (
               <Card key={order.getId()}>
                 <OrderHeader
+                  disableButton={order.isReceived()}
                   onButtonClick={() =>
                     order.receive(() => setOrders({ ...orders }))
                   }
@@ -105,11 +111,49 @@ export default function App() {
                   {order}
                 </OrderHeader>
                 <Accordion.Collapse eventKey={index.toString()}>
-                  <Card.Body>{order.getContent()}</Card.Body>
+                  <Card.Body>
+                    {order.getContent().map((str, index) => {
+                      return (
+                        <p key={index} className="mb-0">
+                          {str}
+                        </p>
+                      );
+                    })}
+                  </Card.Body>
                 </Accordion.Collapse>
               </Card>
             ))}
           </Accordion>
+        )}
+        {page === "meds" && (
+          <Container>
+            <Row>
+              {Object.values(meds).map((med) => (
+                <Col key={med.getId()} className="mb-3">
+                  <MedSettings
+                    handleMedChange={() => {
+                      fetchMeds().then((d) => {
+                        setMeds(d);
+                      });
+                    }}
+                  >
+                    {med}
+                  </MedSettings>
+                </Col>
+              ))}
+              <Col className="mb-3">
+                <MedSettings
+                  handleMedChange={() => {
+                    fetchMeds().then((d) => {
+                      setMeds(d);
+                    });
+                  }}
+                >
+                  {undefined}
+                </MedSettings>
+              </Col>
+            </Row>
+          </Container>
         )}
       </>
     );
@@ -117,7 +161,11 @@ export default function App() {
     return (
       <>
         <LoginForm setCurrentUser={setCurrentUser}></LoginForm>
-        <NavBar setCurrentUser={setCurrentUser} setPage={setPage}></NavBar>
+        <NavBar
+          admin={false}
+          setCurrentUser={setCurrentUser}
+          setPage={setPage}
+        ></NavBar>
       </>
     );
   }
@@ -127,9 +175,15 @@ interface HeaderProps {
   children: Order;
   eventKey: string;
   onButtonClick: (e: any) => void;
+  disableButton: boolean;
 }
 
-function OrderHeader({ children, eventKey, onButtonClick }: HeaderProps) {
+function OrderHeader({
+  children,
+  eventKey,
+  onButtonClick,
+  disableButton,
+}: HeaderProps) {
   const decoratedOnClick = useAccordionButton(eventKey);
   return (
     <Card.Header>
@@ -149,7 +203,11 @@ function OrderHeader({ children, eventKey, onButtonClick }: HeaderProps) {
             {children.getStatus()}
           </Badge>
         </div>
-        <Button variant="secondary" onClick={onButtonClick}>
+        <Button
+          disabled={disableButton}
+          variant={disableButton ? "secondary" : "primary"}
+          onClick={onButtonClick}
+        >
           Receive
         </Button>
       </div>
