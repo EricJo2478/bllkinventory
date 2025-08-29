@@ -43,6 +43,35 @@ export const database = getFirestore(app);
 export const auth = getAuth(app);
 const ordersRef = collection(database, "orders");
 
+export async function firestoreWithNetworkRetry(
+  operationFunction: () => Promise<any>,
+  maxRetries = 3,
+  delayMs = 1000
+) {
+  let retries = 0;
+  while (retries < maxRetries) {
+    try {
+      const result = await operationFunction();
+      return result; // Success
+    } catch (error: any) {
+      if (error.code === "unavailable" || error.code === "deadline-exceeded") {
+        // Example error codes for network/timeout
+        console.warn(
+          `Firestore operation failed (retry ${retries + 1}/${maxRetries}):`,
+          error.message
+        );
+        await new Promise((resolve) =>
+          setTimeout(resolve, delayMs * Math.pow(2, retries))
+        ); // Exponential backoff
+        retries++;
+      } else {
+        throw error; // Re-throw unhandled errors
+      }
+    }
+  }
+  throw new Error(`Firestore operation failed after ${maxRetries} retries.`);
+}
+
 export interface KeyList<T> {
   [key: string]: T;
 }

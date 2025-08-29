@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { database, KeyList } from "../App";
+import { database, firestoreWithNetworkRetry, KeyList } from "../App";
 import {
   collection,
   doc,
@@ -9,7 +9,9 @@ import {
 
 export async function fetchMeds() {
   const dataSet: KeyList<Med> = {};
-  const data = await getDocs(collection(database, "meds"));
+  const data = await firestoreWithNetworkRetry(
+    async () => await getDocs(collection(database, "meds"))
+  );
   for (const doc of data.docs) {
     const docData = doc.data();
     dataSet[doc.id] = new Med(
@@ -22,7 +24,10 @@ export async function fetchMeds() {
       docData.entries
     );
   }
-  const aliasData = await getDocs(collection(database, "aliases"));
+
+  const aliasData = await firestoreWithNetworkRetry(
+    async () => await getDocs(collection(database, "aliases"))
+  );
   for (const doc of aliasData.docs) {
     const docData = doc.data();
     dataSet[doc.id] = new AliasMed(

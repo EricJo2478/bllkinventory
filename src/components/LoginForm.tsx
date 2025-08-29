@@ -1,7 +1,7 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { useState } from "react";
 import { Alert, Button, Form, Modal } from "react-bootstrap";
-import { auth } from "../App";
+import { auth, firestoreWithNetworkRetry } from "../App";
 
 interface Props {
   setCurrentUser: Function;
@@ -15,12 +15,14 @@ export default function LoginForm({ setCurrentUser }: Props) {
     e.preventDefault();
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
-    signInWithEmailAndPassword(
-      auth,
-      (payload.username as string) + "@bllk.inv",
-      payload.password as string
+    firestoreWithNetworkRetry(() =>
+      signInWithEmailAndPassword(
+        auth,
+        (payload.username as string) + "@bllk.inv",
+        payload.password as string
+      )
     )
-      .then((user) => {
+      .then((user: UserCredential) => {
         if (user) {
           setCurrentUser(user.user);
           setShow(false);
@@ -30,7 +32,9 @@ export default function LoginForm({ setCurrentUser }: Props) {
       })
       .catch((error) => {
         // An error happened.
-        setFailed(true);
+        if (error.message === "auth/invalid-credential") {
+          setFailed(true);
+        }
         console.error("Error signing in:", error);
       });
   };
