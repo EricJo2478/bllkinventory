@@ -50,6 +50,9 @@ export default function MedField({ onChange, children, onDelete }: Props) {
   );
   const [date, setDate] = useState(children.date);
   const [showDelete, setShowDelete] = useState(false);
+  const today = new Date();
+  const expiryDay = new Date();
+  expiryDay.setDate(today.getDate() + 14);
 
   const handleAmountChange = (e: any) => {
     const value = e.target.value;
@@ -88,15 +91,23 @@ export default function MedField({ onChange, children, onDelete }: Props) {
     if (date === "") {
       return false;
     }
-    return new Date(date) <= new Date();
+    return new Date(date) <= expiryDay;
   };
 
   const renderExpiryTooltip = (props: any) => {
     if (isExpired()) {
+      if (new Date(date) <= today) {
+        return (
+          <Tooltip {...props}>
+            Panic!
+            <br /> This is expired!
+          </Tooltip>
+        );
+      }
       return (
         <Tooltip {...props}>
-          Panic!
-          <br /> This is expired!
+          Panic soon!
+          <br /> This is almost expired!
         </Tooltip>
       );
     }
@@ -120,7 +131,11 @@ export default function MedField({ onChange, children, onDelete }: Props) {
                 overlay={renderExpiryTooltip}
               >
                 <Form.Control
-                  className={"w-50 bg-danger"}
+                  className={
+                    new Date(date) <= today
+                      ? "w-50 bg-danger"
+                      : "w-50 bg-warning"
+                  }
                   type="date"
                   value={date}
                   onChange={handleDateChange}
