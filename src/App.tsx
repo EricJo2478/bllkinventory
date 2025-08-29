@@ -1,4 +1,9 @@
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  getFirestore,
+  onSnapshot,
+} from "firebase/firestore";
 import {
   getAuth,
   onAuthStateChanged,
@@ -43,6 +48,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const database = getFirestore(app);
 export const auth = getAuth(app);
+const ordersRef = collection(database, "orders");
 
 export interface KeyList<T> {
   [key: string]: T;
@@ -73,6 +79,39 @@ export default function App() {
       });
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!loading && Object.keys(meds).length > 0) {
+      console.log("Snapshot Started");
+      const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
+        const dataSet: KeyList<Order> = {};
+        for (const doc of snapshot.docs) {
+          const docData = doc.data();
+          console.log(doc.id, docData);
+          const medEntries = [];
+          for (const entry of docData.meds) {
+            medEntries.push({ med: meds[entry.id], amount: entry.amount });
+          }
+
+          dataSet[doc.id] = new Order(
+            doc.id,
+            docData.date.toDate(),
+            medEntries,
+            docData.status
+          );
+        }
+        const entries = Object.entries(dataSet);
+        entries.sort((a, b) => a[1].compare(b[1]));
+        const sortedData = Object.fromEntries(entries);
+        console.log(sortedData);
+        setOrders(sortedData);
+      });
+
+      console.log("Snapshot Ended");
+      // Cleanup function to unsubscribe when the component unmounts
+      return () => unsubscribe();
+    }
+  }, [meds]); // Empty dependency array means this effect runs once on mount
 
   if (loading) {
     return <div>Loading authentication status...</div>;
