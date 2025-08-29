@@ -3,6 +3,7 @@ import {
   getDocs,
   getFirestore,
   onSnapshot,
+  updateDoc,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -22,6 +23,7 @@ import {
   Card,
   Col,
   Container,
+  Modal,
   Row,
   useAccordionButton,
 } from "react-bootstrap";
@@ -30,6 +32,7 @@ import NavBar from "./components/NavBar";
 import LoginForm from "./components/LoginForm";
 import Order, { fetchOrders } from "./components/Order";
 import MedSettings from "./components/MedSettings";
+import OrderAccordionItem from "./components/OrderAccordionItem";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -139,28 +142,22 @@ export default function App() {
         {page === "orders" && (
           <Accordion>
             {Object.values(orders).map((order, index) => (
-              <Card key={order.getId()}>
-                <OrderHeader
-                  disableButton={order.isReceived()}
-                  onButtonClick={() =>
-                    order.receive(() => setOrders({ ...orders }))
+              <OrderAccordionItem
+                key={order.getId()}
+                eventKey={index.toString()}
+                order={order}
+                onReceive={() => {
+                  if (order.getStatus() === "Ordered") {
+                    for (const entry of order.getEntries()) {
+                      entry.med.onOrder = entry.med.onOrder - entry.amount;
+                    }
                   }
-                  eventKey={index.toString()}
-                >
-                  {order}
-                </OrderHeader>
-                <Accordion.Collapse eventKey={index.toString()}>
-                  <Card.Body>
-                    {order.getContent().map((str, index) => {
-                      return (
-                        <p key={index} className="mb-0">
-                          {str}
-                        </p>
-                      );
-                    })}
-                  </Card.Body>
-                </Accordion.Collapse>
-              </Card>
+                  order.setStatus("Received");
+                  setOrders({ ...orders });
+
+                  updateDoc(order.getRef(), { status: "Received" });
+                }}
+              ></OrderAccordionItem>
             ))}
           </Accordion>
         )}
@@ -208,48 +205,4 @@ export default function App() {
       </>
     );
   }
-}
-
-interface HeaderProps {
-  children: Order;
-  eventKey: string;
-  onButtonClick: (e: any) => void;
-  disableButton: boolean;
-}
-
-function OrderHeader({
-  children,
-  eventKey,
-  onButtonClick,
-  disableButton,
-}: HeaderProps) {
-  const decoratedOnClick = useAccordionButton(eventKey);
-  return (
-    <Card.Header>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div
-          onClick={decoratedOnClick}
-          style={{ flexGrow: 1, cursor: "pointer" }}
-        >
-          {children.getDateString()}
-          <Badge bg={children.getStatusColour()} className="ms-3">
-            {children.getStatus()}
-          </Badge>
-        </div>
-        <Button
-          disabled={disableButton}
-          variant={disableButton ? "secondary" : "primary"}
-          onClick={onButtonClick}
-        >
-          Receive
-        </Button>
-      </div>
-    </Card.Header>
-  );
 }

@@ -73,6 +73,18 @@ export default class Order {
     return this.status;
   }
 
+  getEntries() {
+    return [...this.entries];
+  }
+
+  getRef() {
+    return this.docRef;
+  }
+
+  setStatus(status: string) {
+    this.status = status;
+  }
+
   getStatusColour() {
     if (this.status === "Ordered") {
       return "secondary";
@@ -95,18 +107,6 @@ export default class Order {
 
   isReceived() {
     return this.status === "Received";
-  }
-
-  receive(reload: () => void) {
-    if (this.status === "Ordered") {
-      for (const entry of this.entries) {
-        entry.med.onOrder = entry.med.onOrder - entry.amount;
-      }
-    }
-    this.status = "Received";
-    reload();
-
-    updateDoc(this.docRef, { status: "Received" });
   }
 
   compare(other: Order) {
