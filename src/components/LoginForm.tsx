@@ -1,6 +1,6 @@
 import { signInWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { useState } from "react";
-import { Alert, Button, Form, Modal } from "react-bootstrap";
+import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
 import { auth, firestoreWithNetworkRetry } from "../App";
 
 interface Props {
@@ -10,9 +10,11 @@ interface Props {
 export default function LoginForm({ setCurrentUser }: Props) {
   const [show, setShow] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSignin = (e: any) => {
     e.preventDefault();
+    setLoading(true);
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
     firestoreWithNetworkRetry(() =>
@@ -26,6 +28,7 @@ export default function LoginForm({ setCurrentUser }: Props) {
         if (user) {
           setCurrentUser(user.user);
           setShow(false);
+          setLoading(false);
           console.log("User signed in successfully.");
         }
         // You might want to redirect the user to a login page or update UI
@@ -72,6 +75,7 @@ export default function LoginForm({ setCurrentUser }: Props) {
           <Button variant="primary" type="submit">
             Log In
           </Button>
+          {loading && <Spinner animation="border" />}
         </Form>
       </Modal.Body>
     </Modal>
