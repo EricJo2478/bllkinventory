@@ -16,17 +16,7 @@ import {
 import { initializeApp } from "firebase/app";
 import { useEffect, useState } from "react";
 import MedCard from "./components/MedCard";
-import {
-  Accordion,
-  Badge,
-  Button,
-  Card,
-  Col,
-  Container,
-  Modal,
-  Row,
-  useAccordionButton,
-} from "react-bootstrap";
+import { Accordion, Col, Container, Row } from "react-bootstrap";
 import Med, { fetchMeds } from "./components/Med";
 import NavBar from "./components/NavBar";
 import LoginForm from "./components/LoginForm";
@@ -85,12 +75,11 @@ export default function App() {
 
   useEffect(() => {
     if (!loading && Object.keys(meds).length > 0) {
-      console.log("Snapshot Started");
       const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
         const dataSet: KeyList<Order> = {};
+        Object.values(meds).forEach((med) => (med.onOrder = 0));
         for (const doc of snapshot.docs) {
           const docData = doc.data();
-          console.log(doc.id, docData);
           const medEntries = [];
           for (const entry of docData.meds) {
             medEntries.push({ med: meds[entry.id], amount: entry.amount });
@@ -106,11 +95,9 @@ export default function App() {
         const entries = Object.entries(dataSet);
         entries.sort((a, b) => a[1].compare(b[1]));
         const sortedData = Object.fromEntries(entries);
-        console.log(sortedData);
         setOrders(sortedData);
       });
 
-      console.log("Snapshot Ended");
       // Cleanup function to unsubscribe when the component unmounts
       return () => unsubscribe();
     }

@@ -48,7 +48,8 @@ export default function MedCard({ children }: Props) {
   const getTotal = () => {
     let total = 0;
     for (const entry of entries) {
-      if (entry.getDate() > new Date()) {
+      const date = entry.getDate();
+      if (isNaN(date.valueOf()) || date > new Date()) {
         total = total + entry.amount;
       }
     }
