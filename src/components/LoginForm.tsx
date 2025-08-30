@@ -55,7 +55,7 @@ export default function LoginForm({ setCurrentUser }: Props) {
         )}
         <Form onSubmit={handleSignin}>
           <Form.Group className="mb-3" controlId="formUsername">
-            <Form.Label>Email address</Form.Label>
+            <Form.Label>Username</Form.Label>
             <Form.Control
               name="username"
               autoFocus
@@ -66,11 +66,7 @@ export default function LoginForm({ setCurrentUser }: Props) {
 
           <Form.Group className="mb-3" controlId="formPassword">
             <Form.Label>Password</Form.Label>
-            <Form.Control
-              name="password"
-              type="password"
-              placeholder="Password"
-            />
+            <Form.Control name="password" type="text" placeholder="Password" />
           </Form.Group>
           <Button variant="primary" type="submit">
             Log In
