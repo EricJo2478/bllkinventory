@@ -9,6 +9,7 @@ import {
 import { Trash } from "react-bootstrap-icons";
 import { MedEntry } from "./Med";
 import { useState } from "react";
+import { expiryDay, today } from "../App";
 
 interface Props {
   onDelete: any;
@@ -46,13 +47,10 @@ function DeleteModal({ handleClose, onDelete }: ModalProps) {
 
 export default function MedField({ onChange, children, onDelete }: Props) {
   const [amount, setAmount] = useState(
-    (children.amount as number) || undefined
+    (children.getAmount() as number) || undefined
   );
   const [date, setDate] = useState(children.date);
   const [showDelete, setShowDelete] = useState(false);
-  const today = new Date();
-  const expiryDay = new Date();
-  expiryDay.setDate(today.getDate() + 14);
 
   const handleAmountChange = (e: any) => {
     const value = e.target.value;
@@ -60,11 +58,12 @@ export default function MedField({ onChange, children, onDelete }: Props) {
     if (isNaN(Parsedvalue) || value === "") {
       setAmount(undefined);
     } else if (Parsedvalue < 0) {
-      children.amount = 0;
+      children.setAmount(0);
       setAmount(0);
     } else {
-      children.amount = Parsedvalue;
+      children.setAmount(Parsedvalue);
       setAmount(Parsedvalue);
+      children.med.calcOrder();
       onChange();
     }
   };
@@ -72,6 +71,7 @@ export default function MedField({ onChange, children, onDelete }: Props) {
   const handleDateChange = (e: any) => {
     children.date = e.target.value;
     setDate(e.target.value);
+    children.med.calcOrder();
     onChange();
   };
 
@@ -80,6 +80,7 @@ export default function MedField({ onChange, children, onDelete }: Props) {
       setShowDelete(true);
     } else {
       onDelete();
+      children.med.calcOrder();
     }
   };
 
@@ -118,7 +119,10 @@ export default function MedField({ onChange, children, onDelete }: Props) {
       {showDelete && (
         <DeleteModal
           handleClose={handleClose}
-          onDelete={onDelete}
+          onDelete={() => {
+            onDelete();
+            children.med.calcOrder();
+          }}
         ></DeleteModal>
       )}
       <Form>

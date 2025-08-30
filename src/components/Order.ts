@@ -95,6 +95,9 @@ export default class Order {
     if (this.status === "Zeroed") {
       return "warning";
     }
+    if (this.status === "Pending") {
+      return "info";
+    }
   }
 
   getContent() {

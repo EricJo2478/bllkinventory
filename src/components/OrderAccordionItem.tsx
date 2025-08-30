@@ -23,7 +23,9 @@ export default function OrderAccordionItem({
   return (
     <Card key={order.getId()}>
       <OrderHeader
-        disableButton={order.isReceived()}
+        disableButton={
+          order.getStatus() === "Received" || order.getStatus() === "Pending"
+        }
         onButtonClick={onReceive}
         eventKey={eventKey}
       >

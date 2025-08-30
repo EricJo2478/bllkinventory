@@ -37,6 +37,10 @@ export const database = getFirestore(app);
 export const auth = getAuth(app);
 const ordersRef = collection(database, "orders");
 
+export const today = new Date();
+export const expiryDay = new Date();
+expiryDay.setDate(today.getDate() + 14);
+
 export async function firestoreWithNetworkRetry(
   operationFunction: () => Promise<any>,
   maxRetries = 3,

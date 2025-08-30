@@ -1,5 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
-import { database, firestoreWithNetworkRetry, KeyList } from "../App";
+import {
+  database,
+  expiryDay,
+  firestoreWithNetworkRetry,
+  KeyList,
+} from "../App";
 import {
   collection,
   doc,
@@ -47,7 +52,7 @@ export class MedEntry {
   readonly id: string;
   readonly med: Med;
   date: string;
-  amount: number;
+  private amount: number;
 
   constructor(med: Med, date: string = "", amount: number = 0) {
     this.med = med;
@@ -59,6 +64,14 @@ export class MedEntry {
   getDate() {
     return new Date(this.date);
   }
+
+  getAmount() {
+    return this.amount;
+  }
+
+  setAmount(amount: number) {
+    this.amount = amount;
+  }
 }
 
 export default class Med {
@@ -69,6 +82,7 @@ export default class Med {
   private readonly name: string;
   private readonly group: string;
   private readonly docRef: DocumentReference;
+  private toOrder: number = 0;
   private entries: MedEntry[] = [];
   onOrder: number = 0;
 
@@ -92,14 +106,38 @@ export default class Med {
     } else {
       this.docRef = doc(database, "meds", this.id);
     }
-
     for (const entry of entries) {
       if (entry.date) {
-        const date = entry.date.toDate().toISOString().slice(0, 10); // format timestamp to string date
-        this.entries.push(new MedEntry(this, date, entry.amount));
+        const date = entry.date.toDate();
+        const dateStr = date.toISOString().slice(0, 10); // format timestamp to string date
+        this.entries.push(new MedEntry(this, dateStr, entry.amount));
+        console.log(entry.date > expiryDay);
       } else {
         this.entries.push(new MedEntry(this, "", entry.amount));
       }
+    }
+
+    this.calcOrder();
+  }
+
+  getAmount() {
+    let amount = 0;
+    for (const entry of this.entries) {
+      if (entry.date) {
+        if (entry.getDate() > expiryDay) {
+          amount = amount + entry.getAmount();
+        }
+      } else {
+        amount = amount + entry.getAmount();
+      }
+    }
+    return amount;
+  }
+
+  calcOrder() {
+    const amount = this.getAmount();
+    if (amount <= this.min) {
+      this.toOrder = Math.floor((this.max - amount) / this.pkg) * this.pkg;
     }
   }
 

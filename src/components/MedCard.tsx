@@ -18,12 +18,12 @@ export default function MedCard({ children }: Props) {
       if (entry.date === "") {
         docEntries.push({
           date: "",
-          amount: entry.amount,
+          amount: entry.getAmount(),
         });
       } else {
         docEntries.push({
           date: Timestamp.fromDate(entry.getDate()),
-          amount: entry.amount,
+          amount: entry.getAmount(),
         });
       }
     }
@@ -45,17 +45,6 @@ export default function MedCard({ children }: Props) {
     setEntries([...entries]);
   };
 
-  const getTotal = () => {
-    let total = 0;
-    for (const entry of entries) {
-      const date = entry.getDate();
-      if (isNaN(date.valueOf()) || date > new Date()) {
-        total = total + entry.amount;
-      }
-    }
-    return total;
-  };
-
   if (entries.length === 0) {
     handleNewEntry();
   } else {
@@ -65,7 +54,7 @@ export default function MedCard({ children }: Props) {
           <Card.Body className="d-flex flex-column">
             <Card.Title>{children.getName()}</Card.Title>
             <Card.Subtitle className="d-flex justify-content-around">
-              <p>Total: {getTotal()}</p>
+              <p>Total: {children.getAmount()}</p>
               <p>Ordered: {children.onOrder}</p>
             </Card.Subtitle>
             {entries.map((entry) => (
