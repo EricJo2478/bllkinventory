@@ -6,7 +6,7 @@ import {
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
-import Med from "./Med";
+import Med, { MedEntry } from "./Med";
 
 export async function fetchOrders(meds: KeyList<Med>) {
   const dataSet: KeyList<Order> = {};
@@ -101,7 +101,7 @@ export default class Order {
   }
 
   getContent() {
-    let output = [];
+    const output = [];
     for (const entry of this.entries) {
       output.push(entry.med.getName() + ": x" + entry.amount);
     }

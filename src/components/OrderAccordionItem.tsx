@@ -8,6 +8,8 @@ import {
 } from "react-bootstrap";
 import Order from "./Order";
 import { useState } from "react";
+import { KeyList } from "../App";
+import Med from "./Med";
 
 interface Props {
   order: Order;

@@ -63,7 +63,6 @@ export default function MedField({ onChange, children, onDelete }: Props) {
     } else {
       children.setAmount(Parsedvalue);
       setAmount(Parsedvalue);
-      children.med.calcOrder();
       onChange();
     }
   };
@@ -71,7 +70,6 @@ export default function MedField({ onChange, children, onDelete }: Props) {
   const handleDateChange = (e: any) => {
     children.date = e.target.value;
     setDate(e.target.value);
-    children.med.calcOrder();
     onChange();
   };
 
@@ -80,7 +78,6 @@ export default function MedField({ onChange, children, onDelete }: Props) {
       setShowDelete(true);
     } else {
       onDelete();
-      children.med.calcOrder();
     }
   };
 
@@ -119,10 +116,7 @@ export default function MedField({ onChange, children, onDelete }: Props) {
       {showDelete && (
         <DeleteModal
           handleClose={handleClose}
-          onDelete={() => {
-            onDelete();
-            children.med.calcOrder();
-          }}
+          onDelete={onDelete}
         ></DeleteModal>
       )}
       <Form>

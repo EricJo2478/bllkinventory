@@ -116,8 +116,6 @@ export default class Med {
         this.entries.push(new MedEntry(this, "", entry.amount));
       }
     }
-
-    this.calcOrder();
   }
 
   getAmount() {
@@ -134,11 +132,8 @@ export default class Med {
     return amount;
   }
 
-  calcOrder() {
-    const amount = this.getAmount();
-    if (amount <= this.min) {
-      this.toOrder = Math.floor((this.max - amount) / this.pkg) * this.pkg;
-    }
+  getToOrder() {
+    return this.toOrder;
   }
 
   compare(other: Med) {
