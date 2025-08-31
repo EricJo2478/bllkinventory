@@ -69,6 +69,7 @@ export default function MedCard({ children }: Props) {
               </MedField>
             ))}
             <Button
+              type="button"
               className="w-100 mt-auto"
               color="blue"
               onClick={handleNewEntry}

@@ -155,7 +155,11 @@ export default function MedField({ onChange, children, onDelete }: Props) {
               onChange={handleAmountChange}
               min="0"
             />
-            <Button variant="outline-secondary" onClick={handleDelete}>
+            <Button
+              type="button"
+              variant="outline-secondary"
+              onClick={handleDelete}
+            >
               <Trash />
             </Button>
           </InputGroup>

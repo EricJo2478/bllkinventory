@@ -22,7 +22,9 @@ export async function fetchMeds() {
     dataSet[doc.id] = new Med(
       doc.id,
       docData.name,
+      docData.formName,
       docData.group,
+      docData.display,
       docData.min,
       docData.max,
       docData.pkg,
@@ -84,12 +86,16 @@ export default class Med {
   private readonly docRef: DocumentReference;
   private toOrder: number = 0;
   private entries: MedEntry[] = [];
+  readonly display: boolean;
+  readonly formName: string | null;
   onOrder: number = 0;
 
   constructor(
     id: string,
     name: string,
+    formName: string | null,
     group: string,
+    display: boolean,
     min: number,
     max: number,
     pkg: number,
@@ -97,7 +103,9 @@ export default class Med {
   ) {
     this.id = id;
     this.name = name;
-    this.group = group;
+    this.formName = formName ? formName : null;
+    this.group = group ? group : "";
+    this.display = display;
     this.min = min;
     this.max = max;
     this.pkg = pkg;
@@ -111,7 +119,6 @@ export default class Med {
         const date = entry.date.toDate();
         const dateStr = date.toISOString().slice(0, 10); // format timestamp to string date
         this.entries.push(new MedEntry(this, dateStr, entry.amount));
-        console.log(entry.date > expiryDay);
       } else {
         this.entries.push(new MedEntry(this, "", entry.amount));
       }
@@ -199,7 +206,9 @@ export class AliasMed extends Med {
     super(
       id,
       name,
+      null,
       parent.getGroup(),
+      parent.display,
       parent.getMin(),
       parent.getMax(),
       parent.getPkg(),

@@ -17,6 +17,7 @@ import LoginForm from "./components/LoginForm";
 import Order, { fetchOrders } from "./components/Order";
 import MedSettings from "./components/MedSettings";
 import OrderAccordionItem from "./components/OrderAccordionItem";
+import OrderForm from "./components/OrderForm";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -80,6 +81,7 @@ export default function App() {
   const [user, setCurrentUser] = useState(null as User | null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState("home");
+  const [pendingOrder, setPendingOrder] = useState(null as Order | null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -105,6 +107,7 @@ export default function App() {
       const unsubscribe = onSnapshot(ordersRef, (snapshot) => {
         const dataSet: KeyList<Order> = {};
         Object.values(meds).forEach((med) => (med.onOrder = 0));
+        let pending: Order | null = null;
         for (const doc of snapshot.docs) {
           const docData = doc.data();
           const medEntries = [];
@@ -118,11 +121,15 @@ export default function App() {
             medEntries,
             docData.status
           );
+          if (docData.status === "Pending") {
+            pending = dataSet[doc.id];
+          }
         }
         const entries = Object.entries(dataSet);
         entries.sort((a, b) => a[1].compare(b[1]));
         const sortedData = Object.fromEntries(entries);
         setOrders(sortedData);
+        setPendingOrder(pending);
       });
 
       // Cleanup function to unsubscribe when the component unmounts
@@ -145,11 +152,14 @@ export default function App() {
         {page === "home" && (
           <Container>
             <Row>
-              {Object.values(meds).map((med) => (
-                <Col key={med.getId()} className="mb-3">
-                  <MedCard>{med}</MedCard>
-                </Col>
-              ))}
+              {Object.values(meds).map(
+                (med) =>
+                  med.display && (
+                    <Col key={med.getId()} className="mb-3">
+                      <MedCard>{med}</MedCard>
+                    </Col>
+                  )
+              )}
             </Row>
           </Container>
         )}
@@ -159,6 +169,7 @@ export default function App() {
               <OrderAccordionItem
                 key={order.getId()}
                 eventKey={index.toString()}
+                meds={meds}
                 order={order}
                 onReceive={() => {
                   if (order.getStatus() === "Ordered") {
@@ -175,22 +186,32 @@ export default function App() {
             ))}
           </Accordion>
         )}
+        <OrderForm
+          show={page === "submit"}
+          pendingOrder={pendingOrder}
+          meds={meds}
+          onSubmit={() => setPage("orders")}
+        ></OrderForm>
+
         {page === "meds" && (
           <Container>
             <Row>
-              {Object.values(meds).map((med) => (
-                <Col key={med.getId()} className="mb-3">
-                  <MedSettings
-                    handleMedChange={() => {
-                      fetchMeds().then((d) => {
-                        setMeds(d);
-                      });
-                    }}
-                  >
-                    {med}
-                  </MedSettings>
-                </Col>
-              ))}
+              {Object.values(meds).map(
+                (med) =>
+                  med.display && (
+                    <Col key={med.getId()} className="mb-3">
+                      <MedSettings
+                        handleMedChange={() => {
+                          fetchMeds().then((d) => {
+                            setMeds(d);
+                          });
+                        }}
+                      >
+                        {med}
+                      </MedSettings>
+                    </Col>
+                  )
+              )}
               <Col className="mb-3">
                 <MedSettings
                   handleMedChange={() => {

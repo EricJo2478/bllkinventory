@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function NavBar({ setPage, setCurrentUser, admin }: Props) {
-  const pages = ["Home", "Orders"];
+  const pages = ["Home", "Orders", "Submit"];
   if (admin) {
     pages.push("Meds");
   }
