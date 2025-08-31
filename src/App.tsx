@@ -41,6 +41,9 @@ const ordersRef = collection(database, "orders");
 export const today = new Date();
 export const expiryDay = new Date();
 expiryDay.setDate(today.getDate() + 14);
+export const zeroedDay = new Date();
+zeroedDay.setDate(today.getDate() - 5);
+zeroedDay.setHours(0, 0, 0, 0);
 
 export async function firestoreWithNetworkRetry(
   operationFunction: () => Promise<any>,

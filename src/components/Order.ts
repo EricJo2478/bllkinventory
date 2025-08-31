@@ -1,12 +1,6 @@
-import { database, KeyList } from "../App";
-import {
-  collection,
-  doc,
-  getDocs,
-  Timestamp,
-  updateDoc,
-} from "firebase/firestore";
-import Med, { MedEntry } from "./Med";
+import { database, KeyList, zeroedDay } from "../App";
+import { collection, doc, getDocs, updateDoc } from "firebase/firestore";
+import Med from "./Med";
 
 export async function fetchOrders(meds: KeyList<Med>) {
   const dataSet: KeyList<Order> = {};
@@ -44,16 +38,24 @@ export default class Order {
     status: string
   ) {
     this.id = id;
+    date.setHours(0, 0, 0, 0);
     this.date = date;
-    this.status = status;
+
     this.docRef = doc(database, "orders", this.id);
 
     this.entries = entries;
 
-    if (this.status === "Ordered") {
+    if (status === "Ordered") {
+      if (this.date >= zeroedDay) {
+        this.status = status;
+      } else {
+        this.status = "Zeroed";
+      }
       for (const entry of this.entries) {
         entry.med.onOrder = entry.med.onOrder + entry.amount;
       }
+    } else {
+      this.status = status;
     }
   }
 
