@@ -8,7 +8,7 @@ import Order from "./Order";
 
 interface Props {
   children: Med;
-  pending: Order;
+  pending: Order | null;
 }
 
 export default function MedCard({ children, pending }: Props) {
