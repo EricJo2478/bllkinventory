@@ -165,6 +165,14 @@ export default function App() {
         )}
         {page === "orders" && (
           <Accordion>
+            {pendingOrder === null && (
+              <OrderAccordionItem
+                eventKey="pending"
+                meds={meds}
+                order={null}
+                onReceive={() => null}
+              ></OrderAccordionItem>
+            )}
             {Object.values(orders).map((order, index) => (
               <OrderAccordionItem
                 key={order.getId()}

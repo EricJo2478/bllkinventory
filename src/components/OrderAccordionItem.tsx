@@ -12,7 +12,7 @@ import { KeyList } from "../App";
 import Med from "./Med";
 
 interface Props {
-  order: Order;
+  order: Order | null;
   eventKey: string;
   onReceive: () => void;
   meds: KeyList<Med>;
@@ -25,59 +25,86 @@ export default function OrderAccordionItem({
   meds,
 }: Props) {
   const pendingContent: ReactNode[] = [];
-  if (order.getStatus() === "Pending") {
+  if (order === null || order.getStatus() === "Pending") {
     const medsList = Object.values(meds);
     medsList.forEach((med) => {
       med.calcOrder();
     });
     const medsToOrder = medsList.filter((med) => med.getToOrder() > 0);
-    order.entries.forEach((entry) => {
-      if (medsToOrder.includes(entry.med)) {
-        if (entry.amount > entry.med.getToOrder()) {
+    if (order) {
+      order.entries.forEach((entry) => {
+        if (medsToOrder.includes(entry.med)) {
+          if (entry.amount > entry.med.getToOrder()) {
+            pendingContent.push(entry.med.getName() + ": x" + entry.amount);
+            medsToOrder.splice(medsToOrder.indexOf(entry.med), 1);
+          }
+        } else {
           pendingContent.push(entry.med.getName() + ": x" + entry.amount);
-          medsToOrder.splice(medsToOrder.indexOf(entry.med), 1);
         }
-      } else {
-        pendingContent.push(entry.med.getName() + ": x" + entry.amount);
-      }
-    });
+      });
+    }
     medsToOrder.forEach((med) => {
       pendingContent.push(med.getName() + ": x" + med.getToOrder());
     });
   }
 
-  return (
-    <Card key={order.getId()}>
-      <OrderHeader
-        disableButton={
-          order.getStatus() === "Received" || order.getStatus() === "Pending"
-        }
-        onButtonClick={onReceive}
-        eventKey={eventKey}
-      >
-        {order}
-      </OrderHeader>
-      <Accordion.Collapse eventKey={eventKey}>
-        <Card.Body>
-          {order.getStatus() === "Pending"
-            ? pendingContent.map((str, index) => {
-                return (
-                  <p key={index} className="mb-0">
-                    {str}
-                  </p>
-                );
-              })
-            : order.getContent().map((str, index) => {
-                return (
-                  <p key={index} className="mb-0">
-                    {str}
-                  </p>
-                );
-              })}
-        </Card.Body>
-      </Accordion.Collapse>
-    </Card>
-  );
+  if (order) {
+    return (
+      <Card>
+        <OrderHeader
+          disableButton={
+            order.getStatus() === "Received" || order.getStatus() === "Pending"
+          }
+          onButtonClick={onReceive}
+          eventKey={eventKey}
+        >
+          {order}
+        </OrderHeader>
+        <Accordion.Collapse eventKey={eventKey}>
+          <Card.Body>
+            {order.getStatus() === "Pending"
+              ? pendingContent.map((str, index) => {
+                  return (
+                    <p key={index} className="mb-0">
+                      {str}
+                    </p>
+                  );
+                })
+              : order.getContent().map((str, index) => {
+                  return (
+                    <p key={index} className="mb-0">
+                      {str}
+                    </p>
+                  );
+                })}
+          </Card.Body>
+        </Accordion.Collapse>
+      </Card>
+    );
+  } else {
+    return (
+      <Card>
+        <OrderHeader
+          disableButton
+          onButtonClick={onReceive}
+          eventKey={eventKey}
+        >
+          {null}
+        </OrderHeader>
+        <Accordion.Collapse eventKey={eventKey}>
+          <Card.Body>
+            {pendingContent.map((str, index) => {
+              return (
+                <p key={index} className="mb-0">
+                  {str}
+                </p>
+              );
+            })}
+          </Card.Body>
+        </Accordion.Collapse>
+      </Card>
+    );
+  }
 }
 
 interface ModalProps {
@@ -111,7 +138,7 @@ function RecieveModal({ handleClose, onReceive }: ModalProps) {
 }
 
 interface HeaderProps {
-  children: Order;
+  children: Order | null;
   eventKey: string;
   onButtonClick: (e: any) => void;
   disableButton: boolean;
@@ -126,6 +153,15 @@ function OrderHeader({
   const [show, setShow] = useState(false);
 
   const decoratedOnClick = useAccordionButton(eventKey);
+  let date: string;
+  if (children) {
+    date = children.getDateString();
+  } else {
+    const monday = new Date();
+    monday.setDate(monday.getDate() + ((1 + 7 - monday.getDay()) % 7));
+    date = monday.toDateString();
+  }
+
   return (
     <>
       {show && (
@@ -146,9 +182,12 @@ function OrderHeader({
             onClick={decoratedOnClick}
             style={{ flexGrow: 1, cursor: "pointer" }}
           >
-            {children.getDateString()}
-            <Badge bg={children.getStatusColour()} className="ms-3">
-              {children.getStatus()}
+            {date}
+            <Badge
+              bg={children ? children.getStatusColour() : "info"}
+              className="ms-3"
+            >
+              {children ? children.getStatus() : "Pending"}
             </Badge>
           </div>
           <Button
