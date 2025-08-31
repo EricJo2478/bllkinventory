@@ -156,7 +156,7 @@ export default function App() {
                 (med) =>
                   med.display && (
                     <Col key={med.getId()} className="mb-3">
-                      <MedCard>{med}</MedCard>
+                      <MedCard pending={pendingOrder}>{med}</MedCard>
                     </Col>
                   )
               )}

@@ -4,12 +4,14 @@ import MedField from "./MedField";
 import { useEffect, useState } from "react";
 import { doc, Timestamp, updateDoc } from "firebase/firestore";
 import { database } from "../App";
+import Order from "./Order";
 
 interface Props {
   children: Med;
+  pending: Order;
 }
 
-export default function MedCard({ children }: Props) {
+export default function MedCard({ children, pending }: Props) {
   const [entries, setEntries] = useState(children.getEntries());
 
   useEffect(() => {
@@ -45,6 +47,8 @@ export default function MedCard({ children }: Props) {
     setEntries([...entries]);
   };
 
+  const pendingEntry = pending ? pending.getEntry(children) : null;
+
   if (entries.length === 0) {
     handleNewEntry();
   } else {
@@ -55,7 +59,10 @@ export default function MedCard({ children }: Props) {
             <Card.Title>{children.getName()}</Card.Title>
             <Card.Subtitle className="d-flex justify-content-around">
               <p>Total: {children.getAmount()}</p>
-              <p>Ordered: {children.onOrder}</p>
+              <p>
+                Ordered:{" "}
+                {children.onOrder + (pendingEntry ? pendingEntry.amount : 0)}
+              </p>
             </Card.Subtitle>
             {entries.map((entry) => (
               <MedField

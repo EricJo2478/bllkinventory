@@ -57,6 +57,15 @@ export default class Order {
     }
   }
 
+  getEntry(med: Med): { med: Med; amount: number } | null {
+    for (const entry of this.entries) {
+      if (entry.med === med) {
+        return { med: med, amount: entry.amount };
+      }
+    }
+    return null;
+  }
+
   getId() {
     return this.id;
   }
