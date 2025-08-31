@@ -22,7 +22,7 @@ export default function NavBar({ setPage, setCurrentUser, admin }: Props) {
             setPage("home");
           }}
         >
-          BLLK
+          BLLKINV v2
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
