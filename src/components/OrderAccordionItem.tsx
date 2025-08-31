@@ -7,7 +7,7 @@ import {
   useAccordionButton,
 } from "react-bootstrap";
 import Order from "./Order";
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { KeyList } from "../App";
 import Med from "./Med";
 
@@ -15,13 +15,37 @@ interface Props {
   order: Order;
   eventKey: string;
   onReceive: () => void;
+  meds: KeyList<Med>;
 }
 
 export default function OrderAccordionItem({
   order,
   eventKey,
   onReceive,
+  meds,
 }: Props) {
+  const pendingContent: ReactNode[] = [];
+  if (order.getStatus() === "Pending") {
+    const medsList = Object.values(meds);
+    medsList.forEach((med) => {
+      med.calcOrder();
+    });
+    const medsToOrder = medsList.filter((med) => med.getToOrder() > 0);
+    order.entries.forEach((entry) => {
+      if (medsToOrder.includes(entry.med)) {
+        if (entry.amount > entry.med.getToOrder()) {
+          pendingContent.push(entry.med.getName() + ": x" + entry.amount);
+          medsToOrder.splice(medsToOrder.indexOf(entry.med), 1);
+        }
+      } else {
+        pendingContent.push(entry.med.getName() + ": x" + entry.amount);
+      }
+    });
+    medsToOrder.forEach((med) => {
+      pendingContent.push(med.getName() + ": x" + med.getToOrder());
+    });
+  }
+
   return (
     <Card key={order.getId()}>
       <OrderHeader
@@ -35,13 +59,21 @@ export default function OrderAccordionItem({
       </OrderHeader>
       <Accordion.Collapse eventKey={eventKey}>
         <Card.Body>
-          {order.getContent().map((str, index) => {
-            return (
-              <p key={index} className="mb-0">
-                {str}
-              </p>
-            );
-          })}
+          {order.getStatus() === "Pending"
+            ? pendingContent.map((str, index) => {
+                return (
+                  <p key={index} className="mb-0">
+                    {str}
+                  </p>
+                );
+              })
+            : order.getContent().map((str, index) => {
+                return (
+                  <p key={index} className="mb-0">
+                    {str}
+                  </p>
+                );
+              })}
         </Card.Body>
       </Accordion.Collapse>
     </Card>

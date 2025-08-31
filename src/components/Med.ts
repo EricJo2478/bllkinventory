@@ -86,6 +86,7 @@ export default class Med {
   private readonly docRef: DocumentReference;
   private toOrder: number = 0;
   private entries: MedEntry[] = [];
+  readonly aliases: Med[] = [];
   readonly display: boolean;
   readonly formName: string | null;
   onOrder: number = 0;
@@ -109,6 +110,7 @@ export default class Med {
     this.min = min;
     this.max = max;
     this.pkg = pkg;
+
     if (this instanceof AliasMed) {
       this.docRef = doc(database, "aliases", this.id);
     } else {
@@ -122,6 +124,18 @@ export default class Med {
       } else {
         this.entries.push(new MedEntry(this, "", entry.amount));
       }
+    }
+  }
+
+  calcOrder() {
+    let amount = this.getAmount() + this.onOrder;
+    for (const alias of this.aliases) {
+      amount = amount + alias.getAmount();
+    }
+    if (amount < this.min) {
+      this.toOrder = Math.floor((this.max - amount) / this.pkg) * this.pkg;
+    } else {
+      this.toOrder = 0;
     }
   }
 
@@ -215,6 +229,7 @@ export class AliasMed extends Med {
       entries
     );
     this.parent = parent;
+    this.parent.aliases.push(this);
   }
 
   compare(other: Med) {
