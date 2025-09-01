@@ -128,6 +128,11 @@ export default class Med {
   }
 
   calcOrder() {
+    if (this.isAlias()) {
+      this.toOrder = 0;
+      return;
+    }
+
     let amount = this.getAmount() + this.onOrder;
     for (const alias of this.aliases) {
       amount = amount + alias.getAmount();
