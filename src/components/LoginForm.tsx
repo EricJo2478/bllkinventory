@@ -1,12 +1,13 @@
 import { signInWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { useState } from "react";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
-import { auth, firestoreWithNetworkRetry } from "../App";
+import { auth, functionNetworkRetry } from "../App";
 
 interface Props {
   setCurrentUser: Function;
 }
 
+// form for login
 export default function LoginForm({ setCurrentUser }: Props) {
   const [show, setShow] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -17,7 +18,7 @@ export default function LoginForm({ setCurrentUser }: Props) {
     setLoading(true);
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
-    firestoreWithNetworkRetry(() =>
+    functionNetworkRetry(() =>
       signInWithEmailAndPassword(
         auth,
         (payload.username as string) + "@bllk.inv",
