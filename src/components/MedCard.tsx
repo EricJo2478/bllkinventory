@@ -1,80 +1,50 @@
 import { Button, Card } from "react-bootstrap";
-import Med, { MedEntry } from "./Med";
-import MedField from "./MedField";
-import { useEffect, useState } from "react";
-import { doc, Timestamp, updateDoc } from "firebase/firestore";
-import { database } from "../App";
+import Med from "./Med";
 import Order from "./Order";
+import MedEntry from "./MedEntry";
 
 interface Props {
-  children: Med;
+  med: Med;
   pending: Order | null;
 }
 
-export default function MedCard({ children, pending }: Props) {
-  const [entries, setEntries] = useState(children.getEntries());
+// med display component
+export default function MedCard({ med, pending }: Props) {
+  const entries = med.getEntries(); // get med entries
+  // handle creation of med entry
+  const handleNewEntry = () => med.newEntry(new MedEntry(med));
 
-  useEffect(() => {
-    const docEntries = [];
-    for (const entry of entries) {
-      if (entry.date === "") {
-        docEntries.push({
-          date: "",
-          amount: entry.getAmount(),
-        });
-      } else {
-        docEntries.push({
-          date: Timestamp.fromDate(entry.getDate()),
-          amount: entry.getAmount(),
-        });
-      }
-    }
-    updateDoc(children.getRef(), { entries: docEntries });
-  }, [entries]);
-
-  const handleNewEntry = () => {
-    const entry = new MedEntry(children);
-    children.newEntry(entry);
-    setEntries([...entries, entry]);
-  };
-
-  const handleDeleteEntry = (idToDelete: string) => {
-    children.setEntries(entries.filter((item) => item.id !== idToDelete));
-    setEntries(entries.filter((item) => item.id !== idToDelete));
-  };
-
-  const handleEntryChange = () => {
-    setEntries([...entries]);
-  };
-
-  const pendingEntry = pending ? pending.getEntry(children) : null;
+  // get the entry from the pending order matching this med if any
+  const pendingEntry = pending ? pending.getEntry(med) : null;
 
   if (entries.length === 0) {
+    // if no entry then create a new (blank) entry instead of rendering
     handleNewEntry();
   } else {
     return (
       <>
         <Card className="h-100" style={{ width: "18rem" }}>
           <Card.Body className="d-flex flex-column">
-            <Card.Title>{children.getName()}</Card.Title>
+            {/* Use med name as card Title */}
+            <Card.Title>{med.getName()}</Card.Title>
+            {/* Display total (not soon to expire) amount and amount on order for med*/}
             <Card.Subtitle className="d-flex justify-content-around">
-              <p>Total: {children.getAmount()}</p>
+              <p>Total: {med.getAmount()}</p>
               <p>
-                Ordered:{" "}
-                {children.onOrder + (pendingEntry ? pendingEntry.amount : 0)}
+                Ordered:
+                {
+                  med.getAmountOnOrder() +
+                    (pendingEntry
+                      ? pendingEntry.getAmount()
+                      : 0) /* indlude the amount manually pending order in the on order value */
+                }
               </p>
             </Card.Subtitle>
-            {entries.map((entry) => (
-              <MedField
-                onChange={handleEntryChange}
-                key={entry.id}
-                onDelete={() => {
-                  handleDeleteEntry(entry.id);
-                }}
-              >
-                {entry}
-              </MedField>
-            ))}
+            {
+              // iterate through entries rendering them
+              entries.map((entry) => entry.render())
+            }
+            {/* button for adding new med entries */}
             <Button
               type="button"
               className="w-100 mt-auto"
