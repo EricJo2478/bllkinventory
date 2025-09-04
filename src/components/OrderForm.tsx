@@ -1,7 +1,6 @@
 import {
   Button,
   Col,
-  Container,
   FloatingLabel,
   Form,
   OverlayTrigger,
@@ -36,18 +35,21 @@ interface Props {
   onSubmit: () => void;
 }
 
+// form for ordering meds
 export default function OrderForm({
   show,
   meds,
   pendingOrder,
   onSubmit,
 }: Props) {
+  // filter out meds with a form name
   const formMeds: Med[] = Object.values(meds).filter(
-    (med) => med.formName !== null
+    (med) => med.getFormName() !== null
   );
 
+  // sort form meds by form name
   formMeds.sort((a, b) => {
-    return (a.formName as string).localeCompare(b.formName as string);
+    return a.getFormName().localeCompare(b.getFormName());
   });
 
   const renderMeds = (meds: Med[]) => {
@@ -59,7 +61,7 @@ export default function OrderForm({
         <Row key={medA.getId()}>
           <Col>
             <Form.Group className="w-100 mb-3" as={Row}>
-              <Form.Label className="w-50">{medA.formName}</Form.Label>
+              <Form.Label className="w-50">{medA.getFormName()}</Form.Label>
               <FloatingLabel
                 controlId={"form" + medA.getId()}
                 label={medA.getName()}
@@ -71,7 +73,7 @@ export default function OrderForm({
           </Col>
           <Col>
             <Form.Group className="w-100 mb-3" as={Row}>
-              <Form.Label className="w-50">{medB.formName}</Form.Label>
+              <Form.Label className="w-50">{medB.getFormName()}</Form.Label>
               <FloatingLabel
                 controlId={"form" + medB.getId()}
                 label={medB.getName()}
@@ -117,18 +119,18 @@ export default function OrderForm({
         });
       } else {
         console.log("update order");
-        for (const entry of pendingOrder.entries) {
-          const id = entry.med.getId();
+        for (const entry of pendingOrder.getEntries()) {
+          const id = entry.getMed().getId();
           if (ordered[id]) {
-            ordered[id] = ordered[id] + entry.amount;
+            ordered[id] = ordered[id] + entry.getAmount();
           } else {
-            ordered[id] = entry.amount;
+            ordered[id] = entry.getAmount();
           }
         }
         const medData = Object.entries(ordered).map((entry) => {
           return { id: entry[0], amount: entry[1] };
         });
-        updateDoc(pendingOrder.docRef, { meds: medData });
+        updateDoc(pendingOrder.getRef(), { meds: medData });
       }
     }
 
