@@ -16,4 +16,16 @@ export default class OrderEntry {
   getMed() {
     return this.med;
   }
+
+  addToMed() {
+    this.med.addOnOrder(this.amount);
+  }
+
+  removeFromMed() {
+    this.med.removeOnOrder(this.amount);
+  }
+
+  toString() {
+    return this.med.getName() + ": x" + this.amount;
+  }
 }
