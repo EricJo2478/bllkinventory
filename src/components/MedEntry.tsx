@@ -1,8 +1,10 @@
-import { DataConnectErrorCode } from "firebase/data-connect";
 import Med from "./Med";
 import { v4 as uuidv4 } from "uuid";
+import { Timestamp } from "firebase/firestore";
+import MedField from "./MedField";
 
-export class MedEntry {
+export default class MedEntry {
+  // look 14 days in advance of expiry date when ordering
   private static expiryDay = new Date();
   static {
     MedEntry.expiryDay.setDate(new Date().getDate() + 14);
@@ -20,15 +22,14 @@ export class MedEntry {
     this.amount = amount;
   }
 
+  getDateString = () => this.date;
   getDate = () => new Date(this.date);
-
   getAmount = () => this.amount;
+  getId = () => this.id;
+  getMed = () => this.med;
 
   getAmountInDate() {
-    if (this.date && this.getDate() <= MedEntry.expiryDay) {
-      return 0;
-    }
-    return this.amount;
+    return this.isExpired() ? 0 : this.amount;
   }
 
   setDate(date: string | Date) {
@@ -44,5 +45,31 @@ export class MedEntry {
     this.med.handleChange();
   }
 
-  render() {}
+  // object version of entry for database
+  toObject() {
+    return {
+      date: this.date === "" ? "" : Timestamp.fromDate(this.getDate()),
+      amount: this.amount,
+    };
+  }
+
+  // check if date is expired
+  isExpired() {
+    if (this.date === "") {
+      return false;
+    }
+    return this.getDate() <= MedEntry.expiryDay;
+  }
+
+  render() {
+    return (
+      <MedField
+        key={this.id}
+        onDelete={() => {
+          this.med.removeEntry(this.id);
+        }}
+        entry={this}
+      />
+    );
+  }
 }
