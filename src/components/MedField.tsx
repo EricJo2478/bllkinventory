@@ -9,6 +9,7 @@ import {
 import { Trash } from "react-bootstrap-icons";
 import { useState } from "react";
 import MedEntry from "./MedEntry";
+import HoverTooltip from "./HoverTooltip";
 
 interface ModalProps {
   handleClose: () => void;
@@ -81,24 +82,22 @@ export default function MedField({ entry, onDelete }: Props) {
   };
 
   // render tooltip for expiry
-  const renderExpiryTooltip = (props: any) => {
+  const toolTipText = () => {
     if (entry.isExpired()) {
       if (entry.getDate() <= new Date()) {
         return (
-          <Tooltip {...props}>
-            Panic!
-            <br /> This is expired!
-          </Tooltip>
+          <p>
+            Panic! <br /> This is expired
+          </p>
         );
       }
       return (
-        <Tooltip {...props}>
-          Panic soon!
-          <br /> This is almost expired!
-        </Tooltip>
+        <p>
+          Panic soon! <br /> This is almost expired!
+        </p>
       );
     }
-    return <span></span>; // reutrn nothing
+    return "Expiry date goes here";
   };
 
   return (
@@ -116,11 +115,7 @@ export default function MedField({ entry, onDelete }: Props) {
         <Form.Group className="mb-3" controlId="fromDate">
           <InputGroup>
             {/* Date form field wrapped in tooltip trigger */}
-            <OverlayTrigger
-              placement="top"
-              delay={{ show: 250, hide: 400 }}
-              overlay={renderExpiryTooltip}
-            >
+            <HoverTooltip placement="top" text={toolTipText()}>
               <Form.Control
                 className={
                   entry.isExpired()
@@ -133,24 +128,28 @@ export default function MedField({ entry, onDelete }: Props) {
                 value={entry.getDateString()}
                 onChange={handleDateChange}
               />
-            </OverlayTrigger>
+            </HoverTooltip>
 
             {/* amount input */}
-            <Form.Control
-              className="w-25"
-              type="number"
-              value={entry.getAmount()}
-              onChange={handleAmountChange}
-              min="0"
-            />
+            <HoverTooltip text="Amount in stock goes here">
+              <Form.Control
+                className="w-25"
+                type="number"
+                value={entry.getAmount()}
+                onChange={handleAmountChange}
+                min="0"
+              />
+            </HoverTooltip>
             {/* delete trash button */}
-            <Button
-              type="button"
-              variant="outline-secondary"
-              onClick={handleDelete}
-            >
-              <Trash />
-            </Button>
+            <HoverTooltip text="Click me to delete this row">
+              <Button
+                type="button"
+                variant="outline-secondary"
+                onClick={handleDelete}
+              >
+                <Trash />
+              </Button>
+            </HoverTooltip>
           </InputGroup>
         </Form.Group>
       </Form>

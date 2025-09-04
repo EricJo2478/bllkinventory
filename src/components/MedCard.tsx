@@ -2,6 +2,7 @@ import { Button, Card } from "react-bootstrap";
 import Med from "./Med";
 import Order from "./Order";
 import MedEntry from "./MedEntry";
+import HoverTooltip from "./HoverTooltip";
 
 interface Props {
   med: Med;
@@ -47,14 +48,16 @@ export default function MedCard({ med, pending }: Props) {
               entries.map((entry) => entry.render())
             }
             {/* button for adding new med entries */}
-            <Button
-              type="button"
-              className="w-100 mt-auto"
-              color="blue"
-              onClick={handleNewEntry}
-            >
-              +
-            </Button>
+            <HoverTooltip text="Click me to add a new row" placement="bottom">
+              <Button
+                type="button"
+                className="w-100 mt-auto"
+                color="blue"
+                onClick={handleNewEntry}
+              >
+                +
+              </Button>
+            </HoverTooltip>
           </Card.Body>
         </Card>
       </>

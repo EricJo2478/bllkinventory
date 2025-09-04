@@ -10,6 +10,7 @@ import Order from "./Order";
 import { ReactNode, useState } from "react";
 import { KeyList } from "../App";
 import Med from "./Med";
+import HoverTooltip from "./HoverTooltip";
 
 interface Props {
   order?: Order;
@@ -190,20 +191,30 @@ function OrderHeader({
             {/*  display date as the header content */}
             {date}
             {/* badge displaying order status using the corisponding colour */}
-            <Badge
-              bg={order ? order.getStatusColour() : "info"}
-              className="ms-3"
+            <HoverTooltip
+              text={
+                order
+                  ? order.getTooltipText()
+                  : "This order is for the future, it has not been sent yet"
+              }
             >
-              {order ? order.getStatus() : "Pending"}
-            </Badge>
+              <Badge
+                bg={order ? order.getStatusColour() : "info"}
+                className="ms-3"
+              >
+                {order ? order.getStatus() : "Pending"}
+              </Badge>
+            </HoverTooltip>
           </div>
-          <Button
-            disabled={disableButton}
-            variant={disableButton ? "secondary" : "primary"}
-            onClick={() => setShow(true)}
-          >
-            Receive
-          </Button>
+          <HoverTooltip text="Click me to mark that this order has arrived">
+            <Button
+              disabled={disableButton}
+              variant={disableButton ? "secondary" : "primary"}
+              onClick={() => setShow(true)}
+            >
+              Receive
+            </Button>
+          </HoverTooltip>
         </div>
       </Card.Header>
     </>

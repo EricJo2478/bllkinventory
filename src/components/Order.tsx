@@ -176,6 +176,17 @@ export default class Order {
     return statusColours[this.getStatus()];
   }
 
+  // get the hover tooltip for the badge
+  getTooltipText() {
+    const statusColours: KeyList<string> = {
+      Ordered: "This order is on it's way but hasn't been marked arrived",
+      Received: "This order was marked arrived",
+      Zeroed: "This order is old but was never marked arrived",
+      Pending: "This order is for the future, it has not been sent yet",
+    };
+    return statusColours[this.getStatus()];
+  }
+
   // get the list of meds in order
   getContent() {
     const output: string[] = [];
