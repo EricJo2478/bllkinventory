@@ -1,6 +1,6 @@
 import Med from "./Med";
 
-export class AliasMed extends Med {
+export default class AliasMed extends Med {
   private readonly parent: Med;
 
   constructor(

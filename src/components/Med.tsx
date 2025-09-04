@@ -4,13 +4,15 @@ import {
   doc,
   DocumentReference,
   getDocs,
+  Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { Col } from "react-bootstrap";
 import MedCard from "./MedCard";
 import Order from "./Order";
 import MedSettings from "./MedSettings";
-import { MedEntry } from "./MedEntry";
-import { AliasMed } from "./AliasMed";
+import MedEntry from "./MedEntry";
+import AliasMed from "./AliasMed";
 
 // fetch meds from database
 export async function fetchMeds(handleMedChange: () => void) {
@@ -68,12 +70,12 @@ export default class Med {
   private readonly name: string;
   private readonly group: string;
   private readonly docRef: DocumentReference;
-  private toOrder: number = 0;
-  private entries: MedEntry[] = [];
   private readonly aliases: Med[] = [];
   private readonly display: boolean;
   private readonly formName: string | null;
   private onOrder: number = 0;
+  private toOrder: number = 0;
+  private entries: MedEntry[] = [];
 
   // refresh the global meds on change
   readonly handleChange: () => void;
@@ -162,6 +164,7 @@ export default class Med {
   // get properties
   getGroup = () => this.group;
   getName = () => this.name;
+  getFormName = () => this.formName as string;
   getMin = () => this.min;
   getMax = () => this.max;
   getPkg = () => this.pkg;
@@ -170,10 +173,38 @@ export default class Med {
   getEntries = () => [...this.entries];
   isAlias = () => false;
   isVisible = () => this.display;
+  resetAmountOnOrder = () => (this.onOrder = 0);
 
-  // add med entry to entries and refresh meds
+  // add to the on order amount
+  addOnOrder(amount: number) {
+    this.onOrder = this.onOrder + amount;
+    this.handleChange();
+  }
+
+  // remove from the on order amount
+  removeOnOrder(amount: number) {
+    this.onOrder = this.onOrder - amount;
+    if (this.onOrder < 0) this.onOrder = 0;
+    this.handleChange();
+  }
+
+  // add med entry to entries, update firebase and refresh meds
   newEntry(entry: MedEntry) {
-    this.entries.push(entry);
+    const docEntries: { date: Timestamp | string; amount: number }[] = []; // array of entries in database format
+    this.entries.forEach((entry) => {
+      docEntries.push(entry.toObject());
+    });
+
+    // update firebase doc for med
+    updateDoc(this.getRef(), { entries: docEntries });
+
+    this.entries.push(entry); // push to entries array
+    this.handleChange();
+  }
+
+  // remove entry from med by id
+  removeEntry(entryId: string) {
+    this.entries = this.entries.filter((item) => item.getId() !== entryId);
     this.handleChange();
   }
 
