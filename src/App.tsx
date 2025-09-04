@@ -14,6 +14,7 @@ import Order, { fetchOrders } from "./components/Order";
 import MedSettings from "./components/MedSettings";
 import OrderForm from "./components/OrderForm";
 import { useEffect, useState } from "react";
+import LoginForm from "./components/LoginForm";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -75,11 +76,11 @@ export default function App() {
 
   // should be run whenever a property of a med changes to refresh react
   const handleMedsChange = () => {
-    setMeds({ ...meds });
+    setMeds((prevstate) => ({ ...prevstate }));
   };
   // should be run whenever a property of an order changes to refresh react
   const handleOrdersChange = () => {
-    setOrders({ ...orders });
+    setOrders((prevstate) => ({ ...prevstate }));
   };
 
   // get the authenticated user if already logged in
@@ -99,12 +100,12 @@ export default function App() {
   ) => {
     // fetch orders passing in the snapshot docs
     fetchOrders(handleOrdersChange, meds, snapshot?.docs).then((data) => {
+      console.log(data);
       // set the orders and pending from data
       const [orderData, pending] = data;
       // save the orders and pending order
       setOrders(orderData as KeyList<Order>);
       setPendingOrder(pending as Order);
-      handleMedsChange(); // meds onOrder value changed
     });
   };
 
@@ -120,7 +121,7 @@ export default function App() {
 
   // setup a snapshot to track order changes in the database if the meds and user are loaded
   useEffect(() => {
-    if (!loading && Object.keys(meds).length > 0) {
+    if (!loading) {
       const unsubscribe = onSnapshot(
         collection(database, "orders"),
         (snapshot) => {
@@ -131,7 +132,7 @@ export default function App() {
       // Cleanup function to unsubscribe when the component unmounts
       return () => unsubscribe();
     }
-  }, []);
+  }, [Object.values(meds).length > 0]);
 
   // if page is loading display a message
   if (loading) {
@@ -155,6 +156,9 @@ export default function App() {
         setCurrentUser={setCurrentUser}
         setPage={setPage}
       ></NavBar>
+      {/* display login page */}
+      {user === null && <LoginForm setCurrentUser={setCurrentUser} />}
+
       {
         // display home page by rendering each med
         page === "home" && (
@@ -209,112 +213,4 @@ export default function App() {
       }
     </>
   );
-  // if done loading and have user
-  //   if (user) {
-  //     return (
-  //       <>
-  //         <NavBar
-  //           admin={user.email === "admin@bllk.inv"}
-  //           setCurrentUser={setCurrentUser}
-  //           setPage={setPage}
-  //         ></NavBar>
-  //         {page === "home" && (
-  //           <Container>
-  //             <Row>
-  //               {Object.values(meds).map(
-  //                 (med) =>
-  //                   med.display && (
-  //                     <Col key={med.getId()} className="mb-3">
-  //                       <MedCard pending={pendingOrder}>{med}</MedCard>
-  //                     </Col>
-  //                   )
-  //               )}
-  //             </Row>
-  //           </Container>
-  //         )}
-  //         {page === "orders" && (
-  //           <Accordion>
-  //             {pendingOrder === null && (
-  //               <OrderAccordionItem
-  //                 eventKey="pending"
-  //                 meds={meds}
-  //                 order={null}
-  //                 onReceive={() => null}
-  //               ></OrderAccordionItem>
-  //             )}
-  //             {Object.values(orders).map((order, index) => (
-  //               <OrderAccordionItem
-  //                 key={order.getId()}
-  //                 eventKey={index.toString()}
-  //                 meds={meds}
-  //                 order={order}
-  //                 onReceive={() => {
-  //                   if (order.getStatus() === "Ordered") {
-  //                     for (const entry of order.getEntries()) {
-  //                       entry.med.onOrder = entry.med.onOrder - entry.amount;
-  //                     }
-  //                   }
-  //                   order.setStatus("Received");
-  //                   setOrders({ ...orders });
-
-  //                   updateDoc(order.getRef(), { status: "Received" });
-  //                 }}
-  //               ></OrderAccordionItem>
-  //             ))}
-  //           </Accordion>
-  //         )}
-  //         <OrderForm
-  //           show={page === "submit"}
-  //           pendingOrder={pendingOrder}
-  //           meds={meds}
-  //           onSubmit={() => setPage("orders")}
-  //         ></OrderForm>
-
-  //         {page === "meds" && (
-  //           <Container>
-  //             <Row>
-  //               {Object.values(meds).map(
-  //                 (med) =>
-  //                   med.display && (
-  //                     <Col key={med.getId()} className="mb-3">
-  //                       <MedSettings
-  //                         handleMedChange={() => {
-  //                           fetchMeds().then((d) => {
-  //                             setMeds(d);
-  //                           });
-  //                         }}
-  //                       >
-  //                         {med}
-  //                       </MedSettings>
-  //                     </Col>
-  //                   )
-  //               )}
-  //               <Col className="mb-3">
-  //                 <MedSettings
-  //                   handleMedChange={() => {
-  //                     fetchMeds().then((d) => {
-  //                       setMeds(d);
-  //                     });
-  //                   }}
-  //                 >
-  //                   {undefined}
-  //                 </MedSettings>
-  //               </Col>
-  //             </Row>
-  //           </Container>
-  //         )}
-  //       </>
-  //     );
-  //   } else {
-  //     return (
-  //       <>
-  //         <LoginForm setCurrentUser={setCurrentUser}></LoginForm>
-  //         <NavBar
-  //           admin={false}
-  //           setCurrentUser={setCurrentUser}
-  //           setPage={setPage}
-  //         ></NavBar>
-  //       </>
-  //     );
-  //   }
 }

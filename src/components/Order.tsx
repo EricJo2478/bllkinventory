@@ -51,6 +51,8 @@ export async function fetchOrders(
       pending = dataSet[doc.id];
     }
   }
+  // calclate the order amount again
+  Object.values(meds).forEach((med) => med.calculateOrder());
 
   // sort orders
   const entries = Object.entries(dataSet);

@@ -37,12 +37,12 @@ export default class MedEntry {
       date = date.toISOString().slice(0, 10); // format timestamp to string date
     }
     this.date = date;
-    this.med.handleChange();
+    this.med.calculateOrder();
   }
 
   setAmount(amount: number) {
     this.amount = amount;
-    this.med.handleChange();
+    this.med.calculateOrder();
   }
 
   // object version of entry for database

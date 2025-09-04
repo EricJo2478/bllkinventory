@@ -32,7 +32,7 @@ export default function OrderAccordionItem({
     const medsList = meds ? Object.values(meds) : [];
 
     // iterate through meds and update the amount to order
-    medsList.forEach((med) => med.calculateOrder());
+    // medsList.forEach((med) => med.calculateOrder());
 
     // filter the meds list ot the meds that are actually getting ordered
     const medsToOrder = medsList.filter((med) => med.getAmountToOrder() > 0);
@@ -67,7 +67,7 @@ export default function OrderAccordionItem({
 
     // if there is no pending content don't render and accordion item
     if (pendingContent.length === 0) {
-      return null;
+      return false;
     }
   }
 

@@ -20,6 +20,7 @@ export default function MedCard({ med, pending }: Props) {
   if (entries.length === 0) {
     // if no entry then create a new (blank) entry instead of rendering
     handleNewEntry();
+    return false;
   } else {
     return (
       <>
@@ -33,10 +34,11 @@ export default function MedCard({ med, pending }: Props) {
               <p>
                 Ordered:
                 {
-                  med.getAmountOnOrder() +
-                    (pendingEntry
-                      ? pendingEntry.getAmount()
-                      : 0) /* indlude the amount manually pending order in the on order value */
+                  " " +
+                    (med.getAmountOnOrder() +
+                      (pendingEntry
+                        ? pendingEntry.getAmount()
+                        : 0)) /* indlude the amount manually pending order in the on order value */
                 }
               </p>
             </Card.Subtitle>

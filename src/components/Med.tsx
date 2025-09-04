@@ -12,7 +12,6 @@ import MedCard from "./MedCard";
 import Order from "./Order";
 import MedSettings from "./MedSettings";
 import MedEntry from "./MedEntry";
-import AliasMed from "./AliasMed";
 
 // fetch meds from database
 export async function fetchMeds(handleMedChange: () => void) {
@@ -103,7 +102,7 @@ export default class Med {
     this.pkg = pkg;
 
     // get doc ref
-    if (this instanceof AliasMed) {
+    if (this.isAlias()) {
       this.docRef = doc(database, "aliases", this.id);
     } else {
       this.docRef = doc(database, "meds", this.id);
@@ -125,13 +124,15 @@ export default class Med {
 
   // calculate the amount to order
   calculateOrder() {
+    if (this.isAlias()) {
+      return;
+    }
     // get amount in order and already ordered
-    let amount = this.getAmount() + this.toOrder;
+    let amount = this.getAmount() + this.onOrder;
     // add the amounts from aliases
     for (const alias of this.aliases) {
       amount = amount + alias.getAmount();
     }
-
     // if below minium then order
     if (amount <= this.min) {
       // calc amount to order in amounts of pkg
@@ -205,13 +206,13 @@ export default class Med {
   // remove entry from med by id
   removeEntry(entryId: string) {
     this.entries = this.entries.filter((item) => item.getId() !== entryId);
-    this.handleChange();
+    this.calculateOrder();
   }
 
   // set entries to new array and refresh
   setEntries(entries: MedEntry[]) {
     this.entries = [...entries];
-    this.handleChange();
+    this.calculateOrder();
   }
 
   // add aliasmed as an alias
@@ -228,7 +229,7 @@ export default class Med {
         </Col>
       );
     }
-    return null;
+    return false;
   }
 
   // render settings card for this med if visible
@@ -240,6 +241,7 @@ export default class Med {
             med={this}
             handleMedChange={() => {
               fetchMeds(handleChange).then((d) => {
+                console.log(d);
                 setMeds(d);
               });
             }}
@@ -247,6 +249,44 @@ export default class Med {
         </Col>
       );
     }
-    return null;
+    return false;
   }
+}
+
+export class AliasMed extends Med {
+  private readonly parent: Med;
+
+  constructor(
+    id: string,
+    name: string,
+    entries: { date: any; amount: number }[],
+    parent: Med,
+    handleChange: () => void
+  ) {
+    super(
+      id,
+      name,
+      null,
+      parent.getGroup(),
+      parent.isVisible(),
+      parent.getMin(),
+      parent.getMax(),
+      parent.getPkg(),
+      entries,
+      handleChange
+    );
+    this.parent = parent;
+    this.parent.addAlias(this);
+  }
+
+  compare(other: Med) {
+    if (this.getGroup() === other.getGroup()) {
+      return this.getName().localeCompare(other.getName());
+    }
+    return this.getGroup().localeCompare(other.getGroup());
+  }
+
+  getParent = () => this.parent;
+  isAlias = () => true;
+  getAmountToOrder = () => 0;
 }

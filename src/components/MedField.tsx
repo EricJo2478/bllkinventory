@@ -98,7 +98,7 @@ export default function MedField({ entry, onDelete }: Props) {
         </Tooltip>
       );
     }
-    return null;
+    return <span></span>; // reutrn nothing
   };
 
   return (
@@ -123,9 +123,11 @@ export default function MedField({ entry, onDelete }: Props) {
             >
               <Form.Control
                 className={
-                  entry.getDate() <= new Date()
-                    ? "w-50 bg-danger"
-                    : "w-50 bg-warning"
+                  entry.isExpired()
+                    ? entry.getDate() <= new Date()
+                      ? "w-50 bg-danger"
+                      : "w-50 bg-warning"
+                    : "w-50"
                 }
                 type="date"
                 value={entry.getDateString()}
