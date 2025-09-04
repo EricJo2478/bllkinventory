@@ -7,17 +7,13 @@ import {
 } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { initializeApp } from "firebase/app";
-import { Key, useEffect, useState } from "react";
-import MedCard from "./components/MedCard";
-import { Accordion, Col, Container, Nav, Row } from "react-bootstrap";
+import { Accordion, Col, Container, Row } from "react-bootstrap";
 import Med, { fetchMeds } from "./components/Med";
 import NavBar from "./components/NavBar";
-import LoginForm from "./components/LoginForm";
 import Order, { fetchOrders } from "./components/Order";
 import MedSettings from "./components/MedSettings";
-import OrderAccordionItem from "./components/OrderAccordionItem";
 import OrderForm from "./components/OrderForm";
-import OrderEntry from "./components/OrderEntry";
+import { useEffect, useState } from "react";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -33,13 +29,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const database = getFirestore(app);
 export const auth = getAuth(app);
-
-// export const today = new Date();
-// export const expiryDay = new Date();
-// expiryDay.setDate(today.getDate() + 14);
-// export const zeroedDay = new Date();
-// zeroedDay.setDate(today.getDate() - 5);
-// zeroedDay.setHours(0, 0, 0, 0);
 
 // execute an async function with handling to retry up to 3 times at 1 sec intervals when getting a netword error
 export async function functionNetworkRetry(
