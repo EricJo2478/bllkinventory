@@ -1,11 +1,4 @@
-import {
-  Button,
-  FloatingLabel,
-  Form,
-  FormFloating,
-  Modal,
-  Row,
-} from "react-bootstrap";
+import { Button, FloatingLabel, Form, Modal, Row } from "react-bootstrap";
 import Order from "./Order";
 
 interface Props {
@@ -28,22 +21,20 @@ export default function ReceivedForm({ handleClose, onSubmit, order }: Props) {
           }}
         >
           {order.getEntries().map((entry) => {
+            const med = entry.getMed();
             return (
-              <Row key={entry.med.getId()}>
-                <FloatingLabel
-                  controlId={entry.med.getId() + "date"}
-                  label="Date"
-                >
-                  <Form.Control type="date" name={entry.med.getId() + "date"} />
+              <Row key={med.getId()}>
+                <FloatingLabel controlId={med.getId() + "date"} label="Date">
+                  <Form.Control type="date" name={med.getId() + "date"} />
                 </FloatingLabel>
                 <FloatingLabel
-                  controlId={entry.med.getId() + "amount"}
+                  controlId={med.getId() + "amount"}
                   label="Amount"
                 >
                   <Form.Control
                     type="number"
-                    placeholder={entry.amount.toString()}
-                    name={entry.med.getId() + "amount"}
+                    placeholder={entry.getAmount().toString()}
+                    name={med.getId() + "amount"}
                   />
                 </FloatingLabel>
               </Row>
