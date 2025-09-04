@@ -13,32 +13,32 @@ import { addDoc, collection, updateDoc } from "firebase/firestore";
 import { database } from "../App";
 
 interface Props {
-  children: Med | undefined;
+  med?: Med;
   handleMedChange: Function;
 }
 
-export default function MedSettings({ children, handleMedChange }: Props) {
+export default function MedSettings({ med, handleMedChange }: Props) {
   const [saved, setSaved] = useState(true);
-  const [group, setGroup] = useState(children ? children.getGroup() : "");
+  const [group, setGroup] = useState(med ? med.getGroup() : "");
   const [min, setMin] = useState(
-    children
-      ? children.getMin() < 0
+    med
+      ? med.getMin() < 0
         ? undefined
-        : children.getMin()
+        : med.getMin()
       : (undefined as number | undefined)
   );
   const [max, setMax] = useState(
-    children
-      ? children.getMax() < 0
+    med
+      ? med.getMax() < 0
         ? undefined
-        : children.getMax()
+        : med.getMax()
       : (undefined as number | undefined)
   );
   const [pkg, setPkg] = useState(
-    children
-      ? children.getPkg() < 0
+    med
+      ? med.getPkg() < 0
         ? undefined
-        : children.getPkg()
+        : med.getPkg()
       : (undefined as number | undefined)
   );
 
@@ -88,15 +88,15 @@ export default function MedSettings({ children, handleMedChange }: Props) {
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
     console.log(payload);
-    if (children) {
+    if (med) {
       const data = {
-        name: children.getName(),
+        name: med.getName(),
         group: payload.group as string,
         min: Number(payload.min),
         max: Number(payload.max),
         pkg: Number(payload.pkg),
       };
-      updateDoc(children.getRef(), data);
+      updateDoc(med.getRef(), data);
       setSaved(true);
     } else {
       const data = {
@@ -117,11 +117,11 @@ export default function MedSettings({ children, handleMedChange }: Props) {
   };
 
   const handleCancel = (e: any) => {
-    if (children) {
-      setGroup(children.getGroup());
-      setMin(children.getMin());
-      setMax(children.getMax());
-      setPkg(children.getPkg());
+    if (med) {
+      setGroup(med.getGroup());
+      setMin(med.getMin());
+      setMax(med.getMax());
+      setPkg(med.getPkg());
       setSaved(true);
     }
   };
@@ -130,16 +130,14 @@ export default function MedSettings({ children, handleMedChange }: Props) {
     <>
       <Card className="h-100" style={{ width: "18rem" }}>
         <Card.Body className="d-flex flex-column">
-          {children && (
-            <Card.Title className="mb-4">{children.getName()}</Card.Title>
-          )}
-          {!saved && children && (
+          {med && <Card.Title className="mb-4">{med.getName()}</Card.Title>}
+          {!saved && med && (
             <Card.Subtitle className="fst-italic text-muted">
               Unsaved
             </Card.Subtitle>
           )}
           <Form onSubmit={handleSubmit}>
-            {children === undefined && (
+            {med === undefined && (
               <FloatingLabel controlId="floatingName" label="Name">
                 <Form.Control
                   onChange={() => setSaved(false)}
@@ -191,13 +189,13 @@ export default function MedSettings({ children, handleMedChange }: Props) {
               </FloatingLabel>
             </InputGroup>
             <Button
-              className={children ? "w-50" : "w-100"}
+              className={med ? "w-50" : "w-100"}
               variant="primary"
               type="submit"
             >
-              {children ? "Save" : "Create"}
+              {med ? "Save" : "Create"}
             </Button>
-            {children && (
+            {med && (
               <Button
                 onClick={handleCancel}
                 className="w-50"
