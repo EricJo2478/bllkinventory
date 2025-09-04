@@ -7,21 +7,15 @@ import {
   Tooltip,
 } from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
-import { MedEntry } from "./Med";
 import { useState } from "react";
-import { expiryDay, today } from "../App";
-
-interface Props {
-  onDelete: any;
-  children: MedEntry;
-  onChange: () => void;
-}
+import MedEntry from "./MedEntry";
 
 interface ModalProps {
   handleClose: () => void;
   onDelete: Function;
 }
 
+// modal to confirm deletion of med entry
 function DeleteModal({ handleClose, onDelete }: ModalProps) {
   return (
     <Modal show onHide={handleClose}>
@@ -45,56 +39,51 @@ function DeleteModal({ handleClose, onDelete }: ModalProps) {
   );
 }
 
-export default function MedField({ onChange, children, onDelete }: Props) {
-  const [amount, setAmount] = useState(
-    (children.getAmount() as number) || undefined
-  );
-  const [date, setDate] = useState(children.date);
+interface Props {
+  onDelete: any;
+  entry: MedEntry;
+}
+
+// rendered component of a med entry
+export default function MedField({ entry, onDelete }: Props) {
   const [showDelete, setShowDelete] = useState(false);
 
+  // handle amount changing
   const handleAmountChange = (e: any) => {
-    const value = e.target.value;
-    const Parsedvalue = Number(value);
+    const value = e.target.value; // new value as string
+    const Parsedvalue = Number(value); // new value as number
+
     if (isNaN(Parsedvalue) || value === "") {
-      setAmount(undefined);
+      // if not a number or a blank string clear input field
+      e.target.value = "";
     } else if (Parsedvalue < 0) {
-      children.setAmount(0);
-      setAmount(0);
+      // if a negative number set amount to 0
+      entry.setAmount(0);
     } else {
-      children.setAmount(Parsedvalue);
-      setAmount(Parsedvalue);
-      onChange();
+      // if 0 or positive number set to the number
+      entry.setAmount(Parsedvalue);
     }
   };
 
+  // handle date changing
   const handleDateChange = (e: any) => {
-    children.date = e.target.value;
-    setDate(e.target.value);
-    onChange();
+    entry.setDate(e.target.value);
   };
 
+  // handle delete button being pressed
   const handleDelete = () => {
-    if (amount) {
+    // if the amount is zero execute delete, otherwise confirm with modal
+    if (entry.getAmount() > 0) {
       setShowDelete(true);
     } else {
-      onDelete();
+      entry.getMed().removeEntry(entry.getId());
     }
   };
 
-  const handleClose = () => {
-    setShowDelete(false);
-  };
-
-  const isExpired = () => {
-    if (date === "") {
-      return false;
-    }
-    return new Date(date) <= expiryDay;
-  };
-
+  // render tooltip for expiry
   const renderExpiryTooltip = (props: any) => {
-    if (isExpired()) {
-      if (new Date(date) <= today) {
+    if (entry.isExpired()) {
+      if (entry.getDate() <= new Date()) {
         return (
           <Tooltip {...props}>
             Panic!
@@ -109,52 +98,50 @@ export default function MedField({ onChange, children, onDelete }: Props) {
         </Tooltip>
       );
     }
+    return null;
   };
 
   return (
     <>
-      {showDelete && (
-        <DeleteModal
-          handleClose={handleClose}
-          onDelete={onDelete}
-        ></DeleteModal>
-      )}
+      {
+        // if delete modal should be visible render one
+        showDelete && (
+          <DeleteModal
+            handleClose={() => setShowDelete(false)}
+            onDelete={() => entry.getMed().removeEntry(entry.getId())}
+          ></DeleteModal>
+        )
+      }
       <Form>
         <Form.Group className="mb-3" controlId="fromDate">
           <InputGroup>
-            {isExpired() ? (
-              <OverlayTrigger
-                placement="left"
-                delay={{ show: 250, hide: 400 }}
-                overlay={renderExpiryTooltip}
-              >
-                <Form.Control
-                  className={
-                    new Date(date) <= today
-                      ? "w-50 bg-danger"
-                      : "w-50 bg-warning"
-                  }
-                  type="date"
-                  value={date}
-                  onChange={handleDateChange}
-                />
-              </OverlayTrigger>
-            ) : (
+            {/* Date form field wrapped in tooltip trigger */}
+            <OverlayTrigger
+              placement="top"
+              delay={{ show: 250, hide: 400 }}
+              overlay={renderExpiryTooltip}
+            >
               <Form.Control
-                className={"w-50"}
+                className={
+                  entry.getDate() <= new Date()
+                    ? "w-50 bg-danger"
+                    : "w-50 bg-warning"
+                }
                 type="date"
-                value={date}
+                value={entry.getDateString()}
                 onChange={handleDateChange}
               />
-            )}
+            </OverlayTrigger>
 
+            {/* amount input */}
             <Form.Control
               className="w-25"
               type="number"
-              value={amount === undefined ? "" : amount}
+              value={entry.getAmount()}
               onChange={handleAmountChange}
               min="0"
             />
+            {/* delete trash button */}
             <Button
               type="button"
               variant="outline-secondary"
