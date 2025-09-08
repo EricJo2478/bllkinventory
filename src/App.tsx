@@ -8,13 +8,13 @@ import {
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { initializeApp } from "firebase/app";
 import { Accordion, Col, Container, Row } from "react-bootstrap";
-import Med, { fetchMeds } from "./components/Med";
-import NavBar from "./components/NavBar";
-import Order, { fetchOrders } from "./components/Order";
-import MedSettings from "./components/MedSettings";
-import OrderForm from "./components/OrderForm";
+import Med, { fetchMeds } from "./depricated/Med";
+import NavBar from "./depricated/NavBar";
+import Order, { fetchOrders } from "./depricated/Order";
+import MedSettings from "./depricated/MedSettings";
+import OrderForm from "./depricated/OrderForm";
 import { useEffect, useState } from "react";
-import LoginForm from "./components/LoginForm";
+import LoginForm from "./depricated/LoginForm";
 
 // Firebase configuration
 const firebaseConfig = {
