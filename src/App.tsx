@@ -90,6 +90,9 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const getPendingOrderData = () =>
+    Object.values(orders).find((order) => order.status === "Pending");
+
   const getNewOrders = (
     meds: IdList<MedData>,
     snapshot?: QuerySnapshot<DocumentData, DocumentData>
@@ -97,15 +100,37 @@ export default function App() {
     // fetch orders passing in the snapshot docs
     fetchOrders((id: string) => meds[id], snapshot?.docs).then((data) => {
       // save the orders and pending order
-      setOrders(data as IdList<OrderData>);
       Object.values(meds).forEach((med) => (med.onOrder = 0));
       Object.values(data).forEach((order) => {
         if (order.status === "Ordered") {
-          order.meds.forEach((entry) => {
+          Object.values(order.meds).forEach((entry) => {
             if (entry.med) entry.med.onOrder = entry.med.onOrder + entry.amount;
           });
         }
       });
+      let pendingOrderData = getPendingOrderData();
+      if (pendingOrderData === undefined) {
+        pendingOrderData = new OrderData("pending", "Pending", {}, new Date());
+      }
+      Object.values(meds).forEach((med) => {
+        const toOrder = med.calcOrder();
+        if (toOrder > 0) {
+          const orderedMeds = Object.keys(pendingOrderData.meds);
+          if (
+            !orderedMeds.includes(med.id) ||
+            toOrder > pendingOrderData.meds[med.id].amount
+          ) {
+            pendingOrderData.meds[med.id] = { med: med, amount: toOrder };
+          }
+        }
+      });
+      //data["pending"] = pendingOrderData;
+      const entries = Object.entries(data);
+      const sortedOrders = {
+        pending: pendingOrderData,
+        ...Object.fromEntries(entries),
+      };
+      setOrders(sortedOrders as IdList<OrderData>);
     });
   };
 

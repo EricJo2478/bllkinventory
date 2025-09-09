@@ -42,7 +42,7 @@ export default function OrderAccordionItem({ data, eventKey }: Props) {
         <Card.Body>
           {
             // iterate through the order content and render as p elements
-            data.meds.map((data, index) => {
+            Object.values(data.meds).map((data, index) => {
               return (
                 <p key={index} className="mb-0">
                   {"x" + data.amount + " " + data.med.name}

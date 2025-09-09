@@ -1,12 +1,12 @@
 import { collection, doc, DocumentReference } from "firebase/firestore";
 import MedData from "./MedData";
-import { database } from "../App";
+import { database, IdList } from "../App";
 
 export type Status = "Ordered" | "Received" | "Pending" | "Zeroed";
 
 export default class OrderData {
   readonly id: string;
-  readonly meds: { med: MedData; amount: number }[];
+  readonly meds: IdList<{ med: MedData; amount: number }>;
   readonly date: Date;
   readonly docRef: DocumentReference;
   status: Status;
@@ -14,7 +14,7 @@ export default class OrderData {
   constructor(
     id: string,
     status: Status,
-    meds: { med: MedData; amount: number }[],
+    meds: IdList<{ med: MedData; amount: number }>,
     date?: Date
   ) {
     this.id = id;
