@@ -99,6 +99,31 @@ export default function App() {
     return Object.values(data).find((order) => order.status === "Pending");
   };
 
+  const predictPendingOrder = (
+    orders: IdList<OrderData>,
+    meds: IdList<MedData>
+  ) => {
+    let pendingOrderData = getPendingOrderData(orders);
+
+    if (pendingOrderData === undefined) {
+      pendingOrderData = new OrderData("pending", "Pending", {}, monday);
+    } else {
+      pendingOrderData.resetMeds();
+    }
+    Object.values(meds).forEach((med) => {
+      const toOrder = med.calcOrder();
+      if (toOrder > 0) {
+        if (
+          !pendingOrderData.hasMed(med.id) ||
+          toOrder > pendingOrderData.meds[med.id].amount
+        ) {
+          pendingOrderData.meds[med.id] = { med: med, amount: toOrder };
+        }
+      }
+    });
+    return pendingOrderData;
+  };
+
   const getNewOrders = (
     meds: IdList<MedData>,
     snapshot?: QuerySnapshot<DocumentData, DocumentData>
@@ -114,22 +139,7 @@ export default function App() {
           });
         }
       });
-      let pendingOrderData = getPendingOrderData(data);
-
-      if (pendingOrderData === undefined) {
-        pendingOrderData = new OrderData("pending", "Pending", {}, monday);
-      }
-      Object.values(meds).forEach((med) => {
-        const toOrder = med.calcOrder();
-        if (toOrder > 0) {
-          if (
-            !pendingOrderData.hasMed(med.id) ||
-            toOrder > pendingOrderData.meds[med.id].amount
-          ) {
-            pendingOrderData.meds[med.id] = { med: med, amount: toOrder };
-          }
-        }
-      });
+      const pendingOrderData = predictPendingOrder(data, meds);
       if (pendingOrderData.id === "pending") {
         const entries = Object.entries(data);
         const sortedOrders = {
@@ -149,6 +159,12 @@ export default function App() {
   ) => {
     // fetch orders passing in the snapshot docs
     fetchMeds(snapshot?.docs, aliasSnap?.docs).then((data) => {
+      const pendingOrderData = predictPendingOrder(orders, data);
+      console.log(pendingOrderData.id, pendingOrderData);
+      setOrders((prev) => ({
+        ...prev,
+        [pendingOrderData.id]: pendingOrderData,
+      }));
       // save the orders and pending order
       setMeds(data as IdList<MedData>);
     });

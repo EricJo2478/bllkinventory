@@ -6,9 +6,10 @@ export type Status = "Ordered" | "Received" | "Pending" | "Zeroed";
 
 export default class OrderData {
   readonly id: string;
-  readonly meds: IdList<{ med: MedData; amount: number }>;
   readonly date: Date;
   readonly docRef: DocumentReference;
+  private readonly loadedMeds: IdList<{ med: MedData; amount: number }>;
+  meds: IdList<{ med: MedData; amount: number }>;
   status: Status;
 
   constructor(
@@ -21,6 +22,7 @@ export default class OrderData {
     this.status = status;
     this.date = date ? date : new Date();
     this.meds = meds;
+    this.loadedMeds = meds;
     this.docRef = doc(collection(database, "orders"), id);
   }
 
@@ -31,5 +33,9 @@ export default class OrderData {
 
   hasMed(id: string) {
     return Object.keys(this.meds).includes(id);
+  }
+
+  resetMeds() {
+    this.meds = this.loadedMeds;
   }
 }
