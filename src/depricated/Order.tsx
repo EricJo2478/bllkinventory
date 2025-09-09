@@ -9,7 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import Med from "./Med";
-import OrderAccordionItem from "./OrderAccordionItem";
+import OrderAccordionItem from "../components/OrderAccordionItem";
 import OrderEntry from "./OrderEntry";
 
 export async function fetchOrders(

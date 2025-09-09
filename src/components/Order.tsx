@@ -6,16 +6,19 @@ import {
 } from "firebase/firestore";
 import { database, IdList } from "../App";
 import OrderData from "../dataSets/OrderData";
+import MedData from "../dataSets/MedData";
+import OrderAccordionItem from "./OrderAccordionItem";
 
 interface Props {
   data: OrderData;
 }
 
 export default function Order({ data }: Props) {
-  return false;
+  return <OrderAccordionItem key={data.id} eventKey={data.id} data={data} />;
 }
 
 export async function fetchOrders(
+  getMed: (id: string) => MedData,
   docs?: QueryDocumentSnapshot<DocumentData, DocumentData>[]
 ) {
   if (docs === undefined) {
@@ -25,7 +28,16 @@ export async function fetchOrders(
   const orders: IdList<OrderData> = {};
   for (const doc of docs) {
     const data = doc.data();
-    orders[doc.id] = new OrderData(doc.id, data.date.toDate());
+    const meds = [];
+    for (const entry of data.meds) {
+      meds.push({ med: getMed(entry.id), amount: entry.amount });
+    }
+    orders[doc.id] = new OrderData(
+      doc.id,
+      data.status,
+      meds,
+      data.date.toDate()
+    );
   }
 
   // sort orders

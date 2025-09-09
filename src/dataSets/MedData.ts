@@ -13,6 +13,7 @@ export default class MedData {
   readonly display: boolean;
   readonly group: string;
   readonly docRef: DocumentReference;
+  onOrder = 0;
   entries: EntryData[];
 
   constructor(
@@ -46,9 +47,5 @@ export default class MedData {
       }
     }
     return amount;
-  }
-
-  getAmountOnOrder() {
-    return 0;
   }
 }

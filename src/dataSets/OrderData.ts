@@ -1,10 +1,27 @@
+import { collection, doc, DocumentReference } from "firebase/firestore";
+import MedData from "./MedData";
+import { database } from "../App";
+
+export type Status = "Ordered" | "Received" | "Pending" | "Zeroed";
+
 export default class OrderData {
   readonly id: string;
+  readonly meds: { med: MedData; amount: number }[];
   readonly date: Date;
+  readonly docRef: DocumentReference;
+  status: Status;
 
-  constructor(id: string, date?: Date) {
+  constructor(
+    id: string,
+    status: Status,
+    meds: { med: MedData; amount: number }[],
+    date?: Date
+  ) {
     this.id = id;
+    this.status = status;
     this.date = date ? date : new Date();
+    this.meds = meds;
+    this.docRef = doc(collection(database, "orders"), id);
   }
 
   // compare dates on orders

@@ -91,12 +91,21 @@ export default function App() {
   }, []);
 
   const getNewOrders = (
+    meds: IdList<MedData>,
     snapshot?: QuerySnapshot<DocumentData, DocumentData>
   ) => {
     // fetch orders passing in the snapshot docs
-    fetchOrders(snapshot?.docs).then((data) => {
+    fetchOrders((id: string) => meds[id], snapshot?.docs).then((data) => {
       // save the orders and pending order
       setOrders(data as IdList<OrderData>);
+      Object.values(meds).forEach((med) => (med.onOrder = 0));
+      Object.values(data).forEach((order) => {
+        if (order.status === "Ordered") {
+          order.meds.forEach((entry) => {
+            if (entry.med) entry.med.onOrder = entry.med.onOrder + entry.amount;
+          });
+        }
+      });
     });
   };
 
@@ -114,14 +123,15 @@ export default function App() {
       const unsubscribe = onSnapshot(
         collection(database, "orders"),
         (snapshot) => {
-          getNewOrders(snapshot);
+          console.log(meds);
+          getNewOrders(meds, snapshot);
         }
       );
 
       // Cleanup function to unsubscribe when the component unmounts
       return () => unsubscribe();
     }
-  }, [user]);
+  }, [user, Object.keys(meds).length]);
 
   // setup a snapshot to track med changes in the database if the user is loaded
   useEffect(() => {

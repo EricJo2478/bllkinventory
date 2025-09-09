@@ -81,7 +81,7 @@ export default function Med({ data }: Props) {
             <p>
               Ordered:
               {
-                " " + data.getAmountOnOrder() //+
+                " " + data.onOrder //+
                 // (pendingEntry
                 //   ? pendingEntry.getAmount()
                 //   : 0)) /* indlude the amount manually pending order in the on order value */
