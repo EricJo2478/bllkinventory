@@ -134,9 +134,12 @@ export default function App() {
     });
   };
 
-  const getNewMeds = (snapshot?: QuerySnapshot<DocumentData, DocumentData>) => {
+  const getNewMeds = (
+    snapshot?: QuerySnapshot<DocumentData, DocumentData>,
+    aliasSnap?: QuerySnapshot<DocumentData, DocumentData>
+  ) => {
     // fetch orders passing in the snapshot docs
-    fetchMeds(snapshot?.docs).then((data) => {
+    fetchMeds(snapshot?.docs, aliasSnap?.docs).then((data) => {
       // save the orders and pending order
       setMeds(data as IdList<MedData>);
     });
@@ -148,7 +151,6 @@ export default function App() {
       const unsubscribe = onSnapshot(
         collection(database, "orders"),
         (snapshot) => {
-          console.log(meds);
           getNewOrders(meds, snapshot);
         }
       );
@@ -165,6 +167,21 @@ export default function App() {
         collection(database, "meds"),
         (snapshot) => {
           getNewMeds(snapshot);
+        }
+      );
+
+      // Cleanup function to unsubscribe when the component unmounts
+      return () => unsubscribe();
+    }
+  }, [user]);
+
+  // setup a snapshot to track med changes in the database if the user is loaded
+  useEffect(() => {
+    if (!loading) {
+      const unsubscribe = onSnapshot(
+        collection(database, "aliases"),
+        (snapshot) => {
+          getNewMeds(undefined, snapshot);
         }
       );
 
