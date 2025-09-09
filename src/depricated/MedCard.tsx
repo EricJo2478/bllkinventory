@@ -2,7 +2,7 @@ import { Button, Card } from "react-bootstrap";
 import Med from "./Med";
 import Order from "./Order";
 import MedEntry from "./MedEntry";
-import HoverTooltip from "./HoverTooltip";
+import HoverTooltip from "../components/HoverTooltip";
 
 interface Props {
   med: Med;

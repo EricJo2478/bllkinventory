@@ -10,7 +10,7 @@ import Order from "./Order";
 import { ReactNode, useState } from "react";
 import { KeyList } from "../App";
 import Med from "./Med";
-import HoverTooltip from "./HoverTooltip";
+import HoverTooltip from "../components/HoverTooltip";
 
 interface Props {
   order?: Order;

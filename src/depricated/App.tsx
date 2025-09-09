@@ -8,13 +8,13 @@ import {
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { initializeApp } from "firebase/app";
 import { Accordion, Col, Container, Row } from "react-bootstrap";
+import Med, { fetchMeds } from "./depricated/Med";
+import NavBar from "./depricated/NavBar";
+import Order, { fetchOrders } from "./depricated/Order";
+import MedSettings from "./depricated/MedSettings";
+import OrderForm from "./depricated/OrderForm";
 import { useEffect, useState } from "react";
-import Med, { fetchMeds } from "./components/Med";
-import Order, { fetchOrders } from "./components/Order";
-import OrderData from "./dataSets/OrderData";
-import MedData from "./dataSets/MedData";
-import MenuBar from "./components/MenuBar";
-import LoginForm from "./components/LoginForm";
+import LoginForm from "./depricated/LoginForm";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -30,11 +30,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const database = getFirestore(app);
 export const auth = getAuth(app);
-
-// date constants
-export const today = new Date();
-export const expiryDay = new Date();
-expiryDay.setDate(today.getDate() + 13);
 
 // execute an async function with handling to retry up to 3 times at 1 sec intervals when getting a netword error
 export async function functionNetworkRetry(
@@ -67,17 +62,26 @@ export async function functionNetworkRetry(
 }
 
 // object of uuid (string) and any
-export interface IdList<T> {
+export interface KeyList<T> {
   [key: string]: T;
 }
 
 export default function App() {
-  const [meds, setMeds] = useState({} as IdList<MedData>); // list of loaded meds
-  const [orders, setOrders] = useState({} as IdList<OrderData>); // list of loaded orders
+  const [meds, setMeds] = useState({} as KeyList<Med>); // list of loaded meds
+  const [orders, setOrders] = useState({} as KeyList<Order>); // list of loaded orders
   const [user, setCurrentUser] = useState(null as User | null); // authentiaced user
   const [loading, setLoading] = useState(true); // state for while page is loading
   const [page, setPage] = useState("home"); // current page being displayed
-  const [pendingOrder, setPendingOrder] = useState(null as OrderData | null); // the pending order (if any)
+  const [pendingOrder, setPendingOrder] = useState(null as Order | null); // the pending order (if any)
+
+  // should be run whenever a property of a med changes to refresh react
+  const handleMedsChange = () => {
+    setMeds((prevstate) => ({ ...prevstate }));
+  };
+  // should be run whenever a property of an order changes to refresh react
+  const handleOrdersChange = () => {
+    setOrders((prevstate) => ({ ...prevstate }));
+  };
 
   // get the authenticated user if already logged in
   useEffect(() => {
@@ -91,58 +95,53 @@ export default function App() {
   }, []);
 
   const getNewOrders = (
+    meds: KeyList<Med>,
     snapshot?: QuerySnapshot<DocumentData, DocumentData>
   ) => {
     // fetch orders passing in the snapshot docs
-    fetchOrders(snapshot?.docs).then((data) => {
+    fetchOrders(handleOrdersChange, meds, snapshot?.docs).then((data) => {
+      // set the orders and pending from data
+      const [orderData, pending] = data;
       // save the orders and pending order
-      setOrders(data as IdList<OrderData>);
+      setOrders(orderData as KeyList<Order>);
+      setPendingOrder(pending as Order);
     });
   };
 
-  const getNewMeds = (snapshot?: QuerySnapshot<DocumentData, DocumentData>) => {
-    // fetch orders passing in the snapshot docs
-    fetchMeds(snapshot?.docs).then((data) => {
-      // save the orders and pending order
-      setMeds(data as IdList<MedData>);
-    });
-  };
+  // fetch the meds and orders once the user is loaded
+  useEffect(() => {
+    if (!loading && user) {
+      fetchMeds(handleMedsChange).then((meds) => {
+        setMeds(meds);
+        getNewOrders(meds);
+      });
+    }
+  }, [user]);
 
-  // setup a snapshot to track order changes in the database if the user is loaded
+  // setup a snapshot to track order changes in the database if the meds and user are loaded
   useEffect(() => {
     if (!loading) {
       const unsubscribe = onSnapshot(
         collection(database, "orders"),
         (snapshot) => {
-          getNewOrders(snapshot);
+          getNewOrders(meds, snapshot);
         }
       );
 
       // Cleanup function to unsubscribe when the component unmounts
       return () => unsubscribe();
     }
-  }, [user]);
-
-  // setup a snapshot to track med changes in the database if the user is loaded
-  useEffect(() => {
-    if (!loading) {
-      const unsubscribe = onSnapshot(
-        collection(database, "meds"),
-        (snapshot) => {
-          getNewMeds(snapshot);
-        }
-      );
-
-      // Cleanup function to unsubscribe when the component unmounts
-      return () => unsubscribe();
-    }
-  }, [user]);
+  }, [Object.values(meds).length > 0]);
 
   // if page is loading display a message
   if (loading) {
     return (
       <>
-        <MenuBar setCurrentUser={setCurrentUser} setPage={setPage}></MenuBar>
+        <NavBar
+          admin={false}
+          setCurrentUser={setCurrentUser}
+          setPage={setPage}
+        ></NavBar>
         <div>Loading authentication status...</div>
       </>
     );
@@ -151,11 +150,11 @@ export default function App() {
   return (
     <>
       {/* display nav bar */}
-      <MenuBar
+      <NavBar
         admin={user && user.email === "admin@bllk.inv" ? true : false} // check if user is admin
         setCurrentUser={setCurrentUser}
         setPage={setPage}
-      ></MenuBar>
+      ></NavBar>
       {/* display login page */}
       {user === null && <LoginForm setCurrentUser={setCurrentUser} />}
 
@@ -164,11 +163,7 @@ export default function App() {
         page === "home" && (
           <Container>
             <Row>
-              {Object.values(meds)
-                .filter((med) => med.display)
-                .map((med) => (
-                  <Med key={med.id} data={med} />
-                ))}
+              {Object.values(meds).map((med) => med.render(pendingOrder))}
             </Row>
           </Container>
         )
@@ -178,40 +173,42 @@ export default function App() {
         page === "orders" && (
           <Accordion>
             {
+              // if there is no pending order display an artificial pending order
+              pendingOrder === null && Order.renderPendingOrder(meds)
+            }
+            {
               // render the orders
-              Object.values(orders).map((order) => (
-                <Order key={order.id} data={order} />
-              ))
+              Object.values(orders).map((order) => order.render())
             }
           </Accordion>
         )
       }
       {/* render orderform in the background but hide when on another page so the form isn't reset on page change */}
-      {/* <OrderForm
+      <OrderForm
         show={page === "submit"}
         pendingOrder={pendingOrder}
         meds={meds}
         onSubmit={() => setPage("orders")}
-      /> */}
+      />
       {
         // display meds settings page by rendering each med settings
-        // page === "meds" && (
-        //   <Row>
-        //     {Object.values(meds).map((med) =>
-        //       med.renderSettings(setMeds, handleMedsChange)
-        //     )}
-        //     {/* Meds Settings submition form */}
-        //     <Col className="mb-3">
-        //       <MedSettings
-        //         handleMedChange={() => {
-        //           fetchMeds(handleMedsChange).then((d) => {
-        //             setMeds(d);
-        //           });
-        //         }}
-        //       />
-        //     </Col>
-        //   </Row>
-        // )
+        page === "meds" && (
+          <Row>
+            {Object.values(meds).map((med) =>
+              med.renderSettings(setMeds, handleMedsChange)
+            )}
+            {/* Meds Settings submition form */}
+            <Col className="mb-3">
+              <MedSettings
+                handleMedChange={() => {
+                  fetchMeds(handleMedsChange).then((d) => {
+                    setMeds(d);
+                  });
+                }}
+              />
+            </Col>
+          </Row>
+        )
       }
     </>
   );

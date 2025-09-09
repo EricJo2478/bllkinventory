@@ -9,7 +9,7 @@ import {
 import { Trash } from "react-bootstrap-icons";
 import { useState } from "react";
 import MedEntry from "./MedEntry";
-import HoverTooltip from "./HoverTooltip";
+import HoverTooltip from "../components/HoverTooltip";
 
 interface ModalProps {
   handleClose: () => void;
