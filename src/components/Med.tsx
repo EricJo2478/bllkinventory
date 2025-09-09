@@ -152,7 +152,8 @@ export async function fetchMeds(
       data.min,
       data.max,
       data.pkg < 0 ? 0 : data.pkg,
-      entries
+      entries,
+      data.formName
     );
   }
 

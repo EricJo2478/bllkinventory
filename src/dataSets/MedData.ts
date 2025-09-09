@@ -10,6 +10,7 @@ export interface EntryData {
 export default class MedData {
   readonly id: string;
   readonly name: string;
+  readonly formName?: string;
   readonly display: boolean;
   readonly group: string;
   readonly docRef: DocumentReference;
@@ -29,10 +30,12 @@ export default class MedData {
     min: number,
     max: number,
     pkg: number,
-    entries: EntryData[]
+    entries: EntryData[],
+    formName?: string
   ) {
     this.id = id;
     this.name = name;
+    this.formName = formName;
     this.display = display;
     this.group = group;
     this.entries = entries;

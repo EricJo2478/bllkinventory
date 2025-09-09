@@ -15,6 +15,7 @@ import OrderData from "./dataSets/OrderData";
 import MedData from "./dataSets/MedData";
 import MenuBar from "./components/MenuBar";
 import LoginForm from "./components/LoginForm";
+import ManualForm from "./components/ManualForm";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -124,7 +125,6 @@ export default function App() {
           }
         }
       });
-      //data["pending"] = pendingOrderData;
       const entries = Object.entries(data);
       const sortedOrders = {
         pending: pendingOrderData,
@@ -238,6 +238,12 @@ export default function App() {
           </Accordion>
         )
       }
+      {page === "submit" && (
+        <ManualForm
+          meds={Object.values(meds).filter((med) => med.formName !== undefined)}
+          getPendingOrderData={getPendingOrderData}
+        />
+      )}
       {/* render orderform in the background but hide when on another page so the form isn't reset on page change */}
       {/* <OrderForm
         show={page === "submit"}
