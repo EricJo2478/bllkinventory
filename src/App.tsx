@@ -91,8 +91,12 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const getPendingOrderData = () =>
-    Object.values(orders).find((order) => order.status === "Pending");
+  const getPendingOrderData = (data?: IdList<OrderData>) => {
+    if (data === undefined) {
+      data = orders;
+    }
+    return Object.values(data).find((order) => order.status === "Pending");
+  };
 
   const getNewOrders = (
     meds: IdList<MedData>,
@@ -109,7 +113,8 @@ export default function App() {
           });
         }
       });
-      let pendingOrderData = getPendingOrderData();
+      let pendingOrderData = getPendingOrderData(data);
+      console.log(pendingOrderData);
       if (pendingOrderData === undefined) {
         pendingOrderData = new OrderData("pending", "Pending", {}, new Date());
       }
@@ -125,12 +130,16 @@ export default function App() {
           }
         }
       });
-      const entries = Object.entries(data);
-      const sortedOrders = {
-        pending: pendingOrderData,
-        ...Object.fromEntries(entries),
-      };
-      setOrders(sortedOrders as IdList<OrderData>);
+      if (pendingOrderData.id === "pending") {
+        const entries = Object.entries(data);
+        const sortedOrders = {
+          pending: pendingOrderData,
+          ...Object.fromEntries(entries),
+        };
+        setOrders(sortedOrders as IdList<OrderData>);
+      } else {
+        setOrders(data as IdList<OrderData>);
+      }
     });
   };
 

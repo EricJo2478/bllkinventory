@@ -26,6 +26,11 @@ export default function OrderAccordionItem({ data, eventKey }: Props) {
     setStatus("Received");
     updateDoc(data.docRef, { status: "Received" });
   };
+
+  if (Object.values(data.meds)[0].med === undefined) {
+    return false;
+  }
+
   return (
     <Card>
       <OrderHeader

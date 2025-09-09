@@ -90,7 +90,6 @@ export default function ManualForm({ meds, getPendingOrderData }: Props) {
   };
   const handleInstantOrder = () => {
     handleDelayedOrder();
-    return;
     fetch(
       "https://script.google.com/macros/s/AKfycbytzNY1-2wxFBA5thGS6wyh9KbATV3zY1EH4eEPuQ_PMTZL1udBZFRCDLearabBLi7O5w/exec"
     );
