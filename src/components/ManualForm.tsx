@@ -1,6 +1,6 @@
 import { Button, Col, FloatingLabel, Form, Row } from "react-bootstrap";
 import HoverTooltip from "./HoverTooltip";
-import { database, IdList } from "../App";
+import { database, IdList, monday } from "../App";
 import MedData from "../dataSets/MedData";
 import OrderData from "../dataSets/OrderData";
 import {
@@ -75,8 +75,6 @@ export default function ManualForm({ meds, getPendingOrderData }: Props) {
 
       updateDoc(doc(collection(database, "orders"), id), { meds: meds });
     } else {
-      const monday = new Date();
-      monday.setDate(monday.getDate() + ((1 + 7 - monday.getDay()) % 7));
       console.log("new order");
       const medData = Object.entries(ordered).map((entry) => {
         return { id: entry[0], amount: entry[1] };

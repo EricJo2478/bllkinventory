@@ -36,6 +36,8 @@ export const auth = getAuth(app);
 export const today = new Date();
 export const expiryDay = new Date();
 expiryDay.setDate(today.getDate() + 13);
+export const monday = new Date();
+monday.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7));
 
 // execute an async function with handling to retry up to 3 times at 1 sec intervals when getting a netword error
 export async function functionNetworkRetry(
@@ -78,7 +80,6 @@ export default function App() {
   const [user, setCurrentUser] = useState(null as User | null); // authentiaced user
   const [loading, setLoading] = useState(true); // state for while page is loading
   const [page, setPage] = useState("home"); // current page being displayed
-  const [pendingOrder, setPendingOrder] = useState(null as OrderData | null); // the pending order (if any)
 
   // get the authenticated user if already logged in
   useEffect(() => {
@@ -114,16 +115,15 @@ export default function App() {
         }
       });
       let pendingOrderData = getPendingOrderData(data);
-      console.log(pendingOrderData);
+
       if (pendingOrderData === undefined) {
-        pendingOrderData = new OrderData("pending", "Pending", {}, new Date());
+        pendingOrderData = new OrderData("pending", "Pending", {}, monday);
       }
       Object.values(meds).forEach((med) => {
         const toOrder = med.calcOrder();
         if (toOrder > 0) {
-          const orderedMeds = Object.keys(pendingOrderData.meds);
           if (
-            !orderedMeds.includes(med.id) ||
+            !pendingOrderData.hasMed(med.id) ||
             toOrder > pendingOrderData.meds[med.id].amount
           ) {
             pendingOrderData.meds[med.id] = { med: med, amount: toOrder };

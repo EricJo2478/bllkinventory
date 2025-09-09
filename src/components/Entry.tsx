@@ -1,9 +1,38 @@
-import { Button, Form, InputGroup } from "react-bootstrap";
+import { Button, Form, InputGroup, Modal } from "react-bootstrap";
 import HoverTooltip from "./HoverTooltip";
 import { SyntheticEvent, useState } from "react";
 import { expiryDay, today } from "../App";
 import { Trash } from "react-bootstrap-icons";
 import { EntryData } from "../dataSets/MedData";
+
+interface ModalProps {
+  handleClose: () => void;
+  onDelete: Function;
+}
+
+// modal to confirm deletion of med entry
+function DeleteModal({ handleClose, onDelete }: ModalProps) {
+  return (
+    <Modal show onHide={handleClose}>
+      <Modal.Header closeButton>
+        <Modal.Title>Are you sure you want to delete this entry?</Modal.Title>
+      </Modal.Header>
+      <Modal.Footer>
+        <Button
+          variant="danger"
+          onClick={() => {
+            handleClose(), onDelete();
+          }}
+        >
+          DELETE
+        </Button>
+        <Button variant="primary" onClick={handleClose}>
+          Cancel
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
 
 interface Props {
   data: EntryData;
@@ -14,6 +43,7 @@ interface Props {
 export default function Entry({ data, onDelete, onUpdate }: Props) {
   const [date, setDate] = useState(data.date as Date | null);
   const [amount, setAmount] = useState(data.amount.toString() as string | null);
+  const [showModal, setShowModal] = useState(false);
 
   const isExpired = () => date && date <= expiryDay;
 
@@ -62,11 +92,21 @@ export default function Entry({ data, onDelete, onUpdate }: Props) {
   };
 
   const handleDelete = () => {
-    onDelete(data.id);
+    if (Number(amount) > 0) {
+      setShowModal(true);
+    } else {
+      onDelete(data.id);
+    }
   };
 
   return (
     <>
+      {showModal && (
+        <DeleteModal
+          handleClose={() => setShowModal(false)}
+          onDelete={() => onDelete(data.id)}
+        />
+      )}
       <Form>
         <Form.Group className="mb-3" controlId="fromDate">
           <InputGroup>

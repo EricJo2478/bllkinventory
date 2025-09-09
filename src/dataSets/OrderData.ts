@@ -28,4 +28,8 @@ export default class OrderData {
   compare(otherOrder: OrderData) {
     return this.date > otherOrder.date ? -1 : 1;
   }
+
+  hasMed(id: string) {
+    return Object.keys(this.meds).includes(id);
+  }
 }
