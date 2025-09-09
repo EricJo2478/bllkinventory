@@ -118,7 +118,8 @@ export default function Med({ data }: Props) {
 }
 
 export async function fetchMeds(
-  docs?: QueryDocumentSnapshot<DocumentData, DocumentData>[]
+  docs?: QueryDocumentSnapshot<DocumentData, DocumentData>[],
+  aliasDocs?: QueryDocumentSnapshot<DocumentData, DocumentData>[]
 ) {
   if (docs === undefined) {
     const data = await getDocs(collection(database, "meds"));
@@ -148,8 +149,49 @@ export async function fetchMeds(
       data.name,
       data.display,
       data.group ? data.group : "",
+      data.min,
+      data.max,
+      data.pkg < 0 ? 0 : data.pkg,
       entries
     );
+  }
+
+  if (aliasDocs === undefined) {
+    const data = await getDocs(collection(database, "aliases"));
+    aliasDocs = data.docs;
+  }
+  for (const doc of aliasDocs) {
+    const data = doc.data();
+    const entries: EntryData[] = [];
+    for (const entry of data.entries) {
+      if (entry.date) {
+        let id = entry.id;
+        if (id === undefined) {
+          id = uuidv4();
+        }
+        entries.push({
+          id: id,
+          date: entry.date.toDate(),
+          amount: entry.amount,
+        });
+      } else {
+        entries.push({ id: uuidv4(), date: null, amount: entry.amount });
+      }
+    }
+    const parent = meds[data.parent];
+    const med = new MedData(
+      doc.id,
+      data.name,
+      parent.display,
+      parent.group,
+      0,
+      0,
+      0,
+      entries
+    );
+    meds[doc.id] = med;
+    parent.children.push(med);
+    med.parent = parent;
   }
 
   // sort orders

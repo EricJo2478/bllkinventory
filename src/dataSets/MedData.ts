@@ -13,6 +13,11 @@ export default class MedData {
   readonly display: boolean;
   readonly group: string;
   readonly docRef: DocumentReference;
+  readonly min: number;
+  readonly max: number;
+  readonly pkg: number;
+  readonly children: MedData[] = [];
+  parent?: MedData;
   onOrder = 0;
   entries: EntryData[];
 
@@ -21,6 +26,9 @@ export default class MedData {
     name: string,
     display: boolean,
     group: string,
+    min: number,
+    max: number,
+    pkg: number,
     entries: EntryData[]
   ) {
     this.id = id;
@@ -29,6 +37,13 @@ export default class MedData {
     this.group = group;
     this.entries = entries;
     this.docRef = doc(collection(database, "meds"), id);
+    this.min = min;
+    this.max = max;
+    this.pkg = pkg;
+  }
+
+  isAlias() {
+    return this.parent !== undefined;
   }
 
   // compare dates on orders
@@ -42,10 +57,24 @@ export default class MedData {
   getAmount() {
     let amount = 0;
     for (const entry of this.entries) {
-      if (entry.date && entry.date > expiryDay) {
+      if (entry.date === null || entry.date > expiryDay) {
         amount = amount + entry.amount;
       }
     }
     return amount;
+  }
+
+  getAmountWithChildren() {
+    let amount = this.getAmount();
+    this.children.forEach((child) => (amount = amount + child.getAmount()));
+    return amount;
+  }
+
+  calcOrder() {
+    const amount = this.getAmountWithChildren();
+    if (this.pkg > 0 && amount <= this.min) {
+      return Math.floor((this.max - amount) / this.pkg) * this.pkg;
+    }
+    return 0;
   }
 }
