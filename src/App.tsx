@@ -160,7 +160,6 @@ export default function App() {
     // fetch orders passing in the snapshot docs
     fetchMeds(snapshot?.docs, aliasSnap?.docs).then((data) => {
       const pendingOrderData = predictPendingOrder(orders, data);
-      console.log(pendingOrderData.id, pendingOrderData);
       setOrders((prev) => ({
         ...prev,
         [pendingOrderData.id]: pendingOrderData,

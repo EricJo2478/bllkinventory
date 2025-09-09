@@ -1,9 +1,9 @@
 import { collection, doc, DocumentReference } from "firebase/firestore";
-import { database, expiryDay } from "../App";
+import { database, expiryDay, IdList } from "../App";
 
 export interface EntryData {
   id: string;
-  date: Date | null;
+  date: Date | "";
   amount: number;
 }
 
@@ -20,7 +20,7 @@ export default class MedData {
   readonly children: MedData[] = [];
   parent?: MedData;
   onOrder = 0;
-  entries: EntryData[];
+  entries: IdList<EntryData> = {};
 
   constructor(
     id: string,
@@ -38,11 +38,11 @@ export default class MedData {
     this.formName = formName;
     this.display = display;
     this.group = group;
-    this.entries = entries;
     this.docRef = doc(collection(database, "meds"), id);
     this.min = min;
     this.max = max;
     this.pkg = pkg;
+    entries.map((entry) => (this.entries[entry.id] = entry));
   }
 
   isAlias() {
@@ -59,7 +59,7 @@ export default class MedData {
 
   getAmount() {
     let amount = 0;
-    for (const entry of this.entries) {
+    for (const entry of Object.values(this.entries)) {
       if (entry.date === null || entry.date > expiryDay) {
         amount = amount + entry.amount;
       }

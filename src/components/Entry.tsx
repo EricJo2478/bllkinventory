@@ -37,15 +37,15 @@ function DeleteModal({ handleClose, onDelete }: ModalProps) {
 interface Props {
   data: EntryData;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, date: Date | null, amount: number) => void;
+  onUpdate: (entry: EntryData, date: Date | "", amount: number) => void;
 }
 
 export default function Entry({ data, onDelete, onUpdate }: Props) {
-  const [date, setDate] = useState(data.date as Date | null);
-  const [amount, setAmount] = useState(data.amount.toString() as string | null);
+  const [date, setDate] = useState(data.date as Date | "");
+  const [amount, setAmount] = useState(data.amount.toString() as string);
   const [showModal, setShowModal] = useState(false);
 
-  const isExpired = () => date && date <= expiryDay;
+  const isExpired = () => date !== "" && date <= expiryDay;
 
   // render tooltip for expiry
   const toolTipText = () => {
@@ -68,9 +68,9 @@ export default function Entry({ data, onDelete, onUpdate }: Props) {
 
   const handleDateChange = (e: SyntheticEvent) => {
     const value = (e.target as HTMLInputElement).value; // new value as string
-    const date = value === "" ? null : new Date(value);
+    const date = value === "" ? "" : new Date(value);
     setDate(date);
-    onUpdate(data.id, date, Number(amount));
+    onUpdate(data, date, Number(amount));
   };
 
   // handle amount changing
@@ -83,11 +83,11 @@ export default function Entry({ data, onDelete, onUpdate }: Props) {
     } else if (parsedvalue < 0) {
       // if a negative number set amount to 0
       setAmount("0");
-      onUpdate(data.id, date, 0);
+      onUpdate(data, date, 0);
     } else {
       // if 0 or positive number set to the number
       setAmount(value);
-      onUpdate(data.id, date, parsedvalue);
+      onUpdate(data, date, parsedvalue);
     }
   };
 
@@ -115,13 +115,13 @@ export default function Entry({ data, onDelete, onUpdate }: Props) {
               <Form.Control
                 className={
                   isExpired()
-                    ? date && date <= today
+                    ? date <= today
                       ? "w-50 bg-danger"
                       : "w-50 bg-warning"
                     : "w-50"
                 }
                 type="date"
-                value={date ? date.toISOString().slice(0, 10) : ""}
+                value={date === "" ? "" : date.toISOString().slice(0, 10)}
                 onChange={handleDateChange}
               />
             </HoverTooltip>

@@ -24,33 +24,35 @@ export default function Med({ data }: Props) {
   useEffect(() => setEntries(data.entries), [data.entries]);
 
   const handleNewEntry = (e: SyntheticEvent) => {
-    setEntries((prevState) => [
+    const entry: EntryData = { id: uuidv4(), date: "", amount: 0 };
+    setEntries((prevState) => ({
       ...prevState,
-      { id: uuidv4(), date: null, amount: 0 },
-    ]);
+      [entry.id]: entry,
+    }));
   };
 
   const handeDeleteEntry = (id: string) => {
-    const updated = entries.filter((entry) => entry.id !== id);
+    const updated = { ...entries };
+    delete updated[id];
     setEntries(updated);
-    updateDatabase(updated);
+    updateDatabase(Object.values(updated));
   };
 
-  const handleEntryUpdate = (id: string, date: Date | null, amount: number) => {
-    const updated = [...entries];
-    const index = updated.findIndex((item) => item.id === id);
-    if (index >= 0) {
-      const entry = updated[index];
-      entry.date = date;
-      entry.amount = amount;
-      updateDatabase(updated);
-      setEntries(updated);
-    }
+  const handleEntryUpdate = (
+    entry: EntryData,
+    date: Date | "",
+    amount: number
+  ) => {
+    const updated = { ...entries };
+    entry.date = date;
+    entry.amount = amount;
+    updateDatabase(Object.values(updated));
+    setEntries(updated);
   };
 
   const updateDatabase = async (updated?: EntryData[]) => {
     if (updated === undefined) {
-      updated = entries;
+      updated = Object.values(entries);
     }
     const docEntries: {
       date: Timestamp | string;
@@ -91,7 +93,7 @@ export default function Med({ data }: Props) {
 
           {
             // iterate through entries rendering them
-            entries.map((entry) => (
+            Object.values(entries).map((entry) => (
               <Entry
                 key={entry.id}
                 data={entry}
@@ -141,7 +143,7 @@ export async function fetchMeds(
           amount: entry.amount,
         });
       } else {
-        entries.push({ id: uuidv4(), date: null, amount: entry.amount });
+        entries.push({ id: uuidv4(), date: "", amount: entry.amount });
       }
     }
     meds[doc.id] = new MedData(
@@ -172,11 +174,11 @@ export async function fetchMeds(
         }
         entries.push({
           id: id,
-          date: entry.date.toDate(),
+          date: entry.date === "" ? "" : entry.date.toDate(),
           amount: entry.amount,
         });
       } else {
-        entries.push({ id: uuidv4(), date: null, amount: entry.amount });
+        entries.push({ id: uuidv4(), date: "", amount: entry.amount });
       }
     }
     const parent = meds[data.parent];
