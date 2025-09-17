@@ -1,8 +1,5 @@
-import { Button, Col, FloatingLabel, Form, Row } from "react-bootstrap";
-import HoverTooltip from "./HoverTooltip";
-import { database, IdList, monday } from "../App";
-import MedData from "../dataSets/MedData";
-import OrderData from "../dataSets/OrderData";
+// src/pages/SubmitPage.tsx
+
 import {
   addDoc,
   collection,
@@ -14,12 +11,14 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
+import { Button, Col, FloatingLabel, Form, Row } from "react-bootstrap";
+import { MedDoc } from "../types/Med";
+import { db } from "../services/firebase";
+import useMeds from "../hooks/useMeds";
+import { monday } from "../utils";
+import HoverTooltip from "../components/common/HoverTooltip";
 
-interface FieldProps {
-  med: MedData;
-}
-
-function FormField({ med }: FieldProps) {
+function FormField({ med }: { med: MedDoc }) {
   return (
     <Col>
       <Form.Group className="w-100 mb-3" as={Row}>
@@ -36,14 +35,11 @@ function FormField({ med }: FieldProps) {
   );
 }
 
-interface Props {
-  meds: MedData[];
-  getPendingOrderData: () => OrderData | undefined;
-}
+export default function ManualForm() {
+  const { meds } = useMeds();
 
-export default function ManualForm({ meds, getPendingOrderData }: Props) {
   const handleDelayedOrder = async () => {
-    const ordered: IdList<number> = {};
+    const ordered: Record<string, number> = {};
     for (const med of meds) {
       const element = document.getElementById(
         "form" + med.id
@@ -55,7 +51,7 @@ export default function ManualForm({ meds, getPendingOrderData }: Props) {
       }
       element.value = "";
     }
-    const ref = collection(database, "orders");
+    const ref = collection(db, "orders");
     const q = query(ref, where("status", "==", "Pending"), limit(1));
     const docs = (await getDocs(q)).docs;
     if (docs.length > 0) {
@@ -73,13 +69,13 @@ export default function ManualForm({ meds, getPendingOrderData }: Props) {
         }
       });
 
-      updateDoc(doc(collection(database, "orders"), id), { meds: meds });
+      updateDoc(doc(collection(db, "orders"), id), { meds: meds });
     } else {
       console.log("new order");
       const medData = Object.entries(ordered).map((entry) => {
         return { id: entry[0], amount: entry[1] };
       });
-      addDoc(collection(database, "orders"), {
+      addDoc(collection(db, "orders"), {
         status: "Pending",
         meds: medData,
         date: monday,

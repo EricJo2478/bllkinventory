@@ -7,38 +7,37 @@ import {
   useAccordionButton,
 } from "react-bootstrap";
 import { useEffect, useState } from "react";
-import HoverTooltip from "./HoverTooltip";
-import OrderData, { Status } from "../dataSets/OrderData";
 import { updateDoc } from "firebase/firestore";
-
-interface Props {
-  data: OrderData;
-  eventKey: string;
-}
+import { OrderDoc, orderStatus } from "../../types/Order";
+import { useMed } from "../../hooks/useMeds";
+import HoverTooltip from "./HoverTooltip";
 
 // order display component
-export default function OrderAccordionItem({ data, eventKey }: Props) {
-  const [status, setStatus] = useState(data.status);
+export default function OrderAccordionItem({
+  order,
+  eventKey,
+}: {
+  order: OrderDoc;
+  eventKey: string;
+}) {
+  const [status, setStatus] = useState<orderStatus>(order.status);
 
-  useEffect(() => setStatus(data.status), [data.status]);
+  useEffect(() => setStatus(order.status), [order.status]);
 
-  const onReceive = () => {
-    setStatus("Received");
-    updateDoc(data.docRef, { status: "Received" });
-  };
+  const onReceive = () => {};
 
-  if (Object.values(data.meds)[0].med === undefined) {
+  if (Object.values(order.meds)[0].id === undefined) {
     return false;
   }
 
   return (
     <Card>
       <OrderHeader
-        title={data.date.toDateString()}
+        title={order.date.toDateString()}
         status={status}
         disableButton={
           // disable button if the order is received or pending
-          status === "Received" || status === "Pending"
+          status === "received" || status === "pending"
         }
         onButtonClick={onReceive}
         eventKey={eventKey}
@@ -47,10 +46,11 @@ export default function OrderAccordionItem({ data, eventKey }: Props) {
         <Card.Body>
           {
             // iterate through the order content and render as p elements
-            Object.values(data.meds).map((data, index) => {
+            Object.values(order.meds).map((entry, index) => {
+              const { med } = useMed(entry.id);
               return (
                 <p key={index} className="mb-0">
-                  {"x" + data.amount + " " + data.med.name}
+                  {"x" + entry.amount + " " + med?.name}
                 </p>
               );
             })
@@ -97,7 +97,7 @@ function RecieveModal({ handleClose, onReceive }: ModalProps) {
 
 interface HeaderProps {
   title: string;
-  status: Status;
+  status: orderStatus;
   eventKey: string;
   onButtonClick: (e: any) => void;
   disableButton: boolean;
@@ -119,17 +119,17 @@ function OrderHeader({
 
   // get the hover tooltip for the badge
   const tooltipTexts = {
-    Ordered: "This order is on it's way but hasn't been marked arrived",
-    Received: "This order was marked arrived",
-    Zeroed: "This order is old but was never marked arrived",
-    Pending: "This order is for the future, it has not been sent yet",
+    ordered: "This order is on it's way but hasn't been marked arrived",
+    received: "This order was marked arrived",
+    zeroed: "This order is old but was never marked arrived",
+    pending: "This order is for the future, it has not been sent yet",
   };
 
   const badgeColors = {
-    Ordered: "secondary",
-    Received: "success",
-    Zeroed: "warning",
-    Pending: "info",
+    ordered: "secondary",
+    received: "success",
+    zeroed: "warning",
+    pending: "info",
   };
 
   return (

@@ -1,14 +1,11 @@
 import { signInWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { useState } from "react";
 import { Alert, Button, Form, Modal, Spinner } from "react-bootstrap";
-import { auth, functionNetworkRetry } from "../App";
-
-interface Props {
-  setCurrentUser: Function;
-}
+import { functionNetworkRetry } from "../../utils";
+import { auth } from "../../services/firebase";
 
 // form for login
-export default function LoginForm({ setCurrentUser }: Props) {
+export default function LoginForm() {
   const [show, setShow] = useState(true);
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,7 +24,6 @@ export default function LoginForm({ setCurrentUser }: Props) {
     )
       .then((user: UserCredential) => {
         if (user) {
-          setCurrentUser(user.user);
           setShow(false);
           setLoading(false);
           console.log("User signed in successfully.");
@@ -67,7 +63,11 @@ export default function LoginForm({ setCurrentUser }: Props) {
 
           <Form.Group className="mb-3" controlId="formPassword">
             <Form.Label>Password</Form.Label>
-            <Form.Control name="password" type="text" placeholder="Password" />
+            <Form.Control
+              name="password"
+              type="password"
+              placeholder="Password"
+            />
           </Form.Group>
           <Button variant="primary" type="submit">
             Log In
