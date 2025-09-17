@@ -33,7 +33,7 @@ export default function OrderAccordionItem({
   return (
     <Card>
       <OrderHeader
-        title={order.date.toDateString()}
+        title={order.date.toDate().toDateString()}
         status={status}
         disableButton={
           // disable button if the order is received or pending

@@ -140,7 +140,7 @@ export const entrySelectors = {
   byId: (id: string) => (s: StoreState) => s.byId.get(id),
   // Derived helpers:
   newestFirst: (s: StoreState) =>
-    [...s.entries].sort((a, b) => b.date.getSeconds() - a.date.getSeconds()),
+    [...s.entries].sort((a, b) => b.date.toMillis() - a.date.toMillis()),
   totalAmount: (s: StoreState) =>
     s.entries.reduce((sum, e) => sum + (e.amount || 0), 0),
 };

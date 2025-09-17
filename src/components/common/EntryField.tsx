@@ -9,13 +9,14 @@ import { Trash } from "react-bootstrap-icons";
 
 export default function EntryField({ entry }: { entry: EntryDoc }) {
   const [showModal, setShowModal] = useState<boolean>(false);
+  const date = entry.date.toDate();
 
-  const isExpired = () => entry.date <= expiryDay;
+  const isExpired = () => date <= expiryDay();
 
   // render tooltip for expiry
   const toolTipText = () => {
     if (isExpired()) {
-      if (entry.date && entry.date <= today) {
+      if (date && date <= today()) {
         return (
           <p>
             Panic! <br /> This is expired
@@ -51,13 +52,13 @@ export default function EntryField({ entry }: { entry: EntryDoc }) {
               <Form.Control
                 className={
                   isExpired()
-                    ? entry.date <= today
+                    ? date <= today()
                       ? "w-50 bg-danger"
                       : "w-50 bg-warning"
                     : "w-50"
                 }
                 type="date"
-                value={entry.date.toISOString().slice(0, 10)}
+                value={date.toISOString().slice(0, 10)}
                 onChange={handleDateChange}
               />
             </HoverTooltip>

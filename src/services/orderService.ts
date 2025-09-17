@@ -100,14 +100,14 @@ export const orderSelectors = {
   status: (s: StoreState) => ({ status: s.status, lastUpdated: s.lastUpdated }),
   byId: (id: string) => (s: StoreState) => s.byId.get(id),
   newestFirst: (s: StoreState) =>
-    [...s.orders].sort((a, b) => b.date.getSeconds() - a.date.getSeconds()),
+    [...s.orders].sort((a, b) => b.date.toMillis() - a.date.toMillis()),
   byStatus: (status: orderStatus) => (s: StoreState) =>
     s.orders.filter((o) => o.status === status),
   currentPending: (s: StoreState) =>
     s.orders.find((o) => o.status === "pending") ?? null,
   withinRange: (start: Date, end: Date) => (s: StoreState) =>
     s.orders.filter((o) => {
-      const t = o.date.getSeconds();
+      const t = o.date.toMillis();
       return t >= start.getTime() && t < end.getTime();
     }),
 };
