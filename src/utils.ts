@@ -3,11 +3,17 @@
 import { Timestamp } from "firebase/firestore";
 
 // date constants
-export const today = new Date();
-export const expiryDay = new Date();
-expiryDay.setDate(today.getDate() + 13);
-export const monday = new Date();
-monday.setDate(today.getDate() + ((1 + 7 - today.getDay()) % 7));
+export const today = () => new Date();
+export const expiryDay = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 13);
+  return d;
+};
+export const monday = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7));
+  return d;
+};
 
 // execute an async function with handling to retry up to 3 times at 1 sec intervals when getting a netword error
 export async function functionNetworkRetry<T>(

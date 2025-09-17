@@ -4,7 +4,7 @@ import OrdersPage from "./pages/OrdersPage";
 import SubmitPage from "./pages/SubmitPage";
 import LoginForm from "./components/auth/LoginForm";
 import { PageLayout } from "./components/common/Navbar";
-import { Route, Routes } from "react-router";
+import { Route, Routes } from "react-router-dom";
 
 export default function App() {
   const { user, loading } = useAuth();

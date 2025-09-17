@@ -52,7 +52,7 @@ export default function ManualForm() {
       element.value = "";
     }
     const ref = collection(db, "orders");
-    const q = query(ref, where("status", "==", "Pending"), limit(1));
+    const q = query(ref, where("status", "==", "pending"), limit(1));
     const docs = (await getDocs(q)).docs;
     if (docs.length > 0) {
       const id = docs[0].id;
@@ -76,7 +76,7 @@ export default function ManualForm() {
         return { id: entry[0], amount: entry[1] };
       });
       addDoc(collection(db, "orders"), {
-        status: "Pending",
+        status: "pending",
         meds: medData,
         date: monday,
       });
