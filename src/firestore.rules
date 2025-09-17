@@ -1,24 +1,66 @@
 rules_version = '2';
 
 service cloud.firestore {
-  match /databases/{database}/documents/meds/{id} {
-      allow create, delete: if false;
-    	allow read: if true;
-      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["entries"]);
-      allow update, create: if request.auth.uid == "orRtVC06dzWVHRByRjyJB3BfYnn2";
+  match /databases/{database}/documents {
+
+    function isKiosk() {
+      // Your kiosk user UID
+      return request.auth != null
+        || isAdmin();
+    }
     
-  }
-  match /databases/{database}/documents/orders/{id} {
-    	allow read: if true;
-      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["meds", "status"]);
-      allow create: if request.auth != null
+    function isAdmin() {
+    	return request.auth != null && request.auth.uid == "orRtVC06dzWVHRByRjyJB3BfYnn2"
+    }
+
+    // ---- Meds + Entries ----------------------------------------------------
+    match /meds/{medId} {
+      allow read: if true;                      // or isKiosk()
+      allow create, update: if isKiosk();
       allow delete: if false;
+
+      match /entries/{entryId} {
+        allow read: if true;                    // or isKiosk()
+        allow create, update, delete: if isKiosk();
+      }
+    }
     
-  }
-  match /databases/{database}/documents/aliases/{id} {
-    	allow read: if true;
-      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["entries"]);
+    // collection-group rule for ANY .../entries/{entryId}
+    match /{path=**}/entries/{entryId} {
+      allow read: if true;                // or your kiosk check
+      allow write: if request.auth != null; // or isKiosk()
+    }
+    
+    // collection-group rule for ANY .../lines/{medId}
+    match /{path=**}/lines/{medId} {
+      allow read: if true;                // or your kiosk check
+      allow write: if request.auth != null; // or isKiosk()
+    }
+
+    // ---- Orders + Lines ----------------------------------------------------
+    match /orders/{orderId} {
+      allow read: if true;                      // or isKiosk()
+      allow create: if isKiosk();
+      // Allow the fields your code actually updates on the order doc
+      allow update: if isKiosk() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["status","updatedAt","totalQuantity"]);
+      allow delete: if false;
+
+      // NEW: lines subcollection
+      match /lines/{lineId} {
+        allow read: if true;                    // or isKiosk()
+        allow create, update, delete: if isKiosk();
+      }
+    }
+
+    // ---- Aliases -----------------------------------------------------------
+    match /aliases/{aliasId} {
+      allow read: if true;                      // or isKiosk()
+      // Keep narrow if you truly only change `entries` on alias docs
+      allow update: if isKiosk() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["entries"]);
       allow create, delete: if false;
-    
+    }
   }
 }

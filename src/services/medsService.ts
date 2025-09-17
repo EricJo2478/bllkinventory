@@ -1,100 +1,78 @@
-// useMeds.ts
+// src/services/medsService.ts
 import {
+  Timestamp,
+  serverTimestamp,
   collection,
-  onSnapshot,
-  query,
-  orderBy,
-  Firestore,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  limit,
 } from "firebase/firestore";
-import { useSyncExternalStore, useMemo } from "react";
 import { MedDoc } from "../types/Med";
+import { db } from "./firebase";
+import { clampInt } from "../utils";
 
-type StoreState = {
-  meds: MedDoc[];
-  byId: Map<string, MedDoc>;
-  status: "idle" | "loading" | "ready" | "error";
-  error?: unknown;
-  lastUpdated?: number; // Date.now()
+export type CreateMedInput = Omit<MedDoc, "id" | "updatedAt"> & {
+  display?: boolean;
 };
+export type UpdateMedInput = Partial<Omit<MedDoc, "id" | "updatedAt">>;
 
-let state: StoreState = { meds: [], byId: new Map(), status: "idle" };
-let stopFirestore: null | (() => void) = null;
-const listeners = new Set<() => void>();
-
-function emit() {
-  listeners.forEach((l) => l());
-}
-
-function start(db: Firestore) {
-  if (stopFirestore) return;
-  state = { ...state, status: "loading" };
-  emit();
-
-  const q = query(collection(db, "meds"), orderBy("group"), orderBy("name"));
-  stopFirestore = onSnapshot(q, {
-    next: (snap) => {
-      const meds: MedDoc[] = snap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as Omit<MedDoc, "id">),
-      }));
-      const byId = new Map(meds.map((m) => [m.id, m]));
-      state = { meds, byId, status: "ready", lastUpdated: Date.now() };
-      emit();
-    },
-    error: (err) => {
-      state = { ...state, status: "error", error: err };
-      emit();
-    },
-  });
-}
-
-function stop() {
-  if (stopFirestore && listeners.size === 0) {
-    stopFirestore();
-    stopFirestore = null;
-    state = { ...state, status: "idle" };
-  }
-}
-
-export function subscribe(db: Firestore, cb: () => void) {
-  listeners.add(cb);
-  start(db);
-  return () => {
-    listeners.delete(cb);
-    stop();
+// ---- Create ----
+export async function createMed({
+  name,
+  formName,
+  group,
+  pkg,
+  aliasOf,
+  display,
+  amount,
+}: CreateMedInput): Promise<string> {
+  const payload: Omit<MedDoc, "id"> = {
+    name: name.trim(),
+    formName: formName?.trim() ?? undefined,
+    group: group?.trim() ?? undefined,
+    pkg: normalizePkg(pkg),
+    aliasOf: aliasOf ?? undefined,
+    display: display ?? true,
+    amount: amount ?? undefined,
+    updatedAt: serverTimestamp() as unknown as Timestamp,
+    entries: [],
   };
+  const ref = await addDoc(collection(db, "meds"), payload);
+  return ref.id;
 }
 
-export function getSnapshot(): StoreState {
-  return state;
+// ---- Update (partial) ----
+export async function updateMed(medId: string, patch: UpdateMedInput) {
+  const p: any = { ...patch, updatedAt: serverTimestamp() };
+  if ("name" in p && typeof p.name === "string") p.name = p.name.trim();
+  if ("formName" in p && typeof p.formName === "string")
+    p.formName = p.formName.trim();
+  if ("group" in p && typeof p.group === "string") p.group = p.group.trim();
+  if ("packSize" in p) p.packSize = normalizePkg(p.packSize);
+  if ("aliasOf" in p && p.aliasOf === undefined) p.aliasOf = null;
+  if ("display" in p && p.display === undefined) p.display = true;
+  await updateDoc(doc(db, "meds", medId), p);
 }
 
-export function getMeds(): MedDoc[] {
-  return state.meds;
+// ---- Delete (safe) ----
+// Fails if the med still has any entries unless force=true.
+export async function deleteMed(medId: string, opts?: { force?: boolean }) {
+  if (!opts?.force) {
+    const snap = await getDocs(collection(db, "meds", medId, "entries"));
+    if (!snap.empty) {
+      throw new Error(
+        "Cannot delete med with existing entries. Pass { force: true } to override."
+      );
+    }
+  }
+  await deleteDoc(doc(db, "meds", medId));
 }
 
-export function getMed(id: string): MedDoc | null {
-  return state.byId.get(id) ?? null;
+// ---- Small helpers ----
+function normalizePkg(n?: number) {
+  if (n == null) return undefined;
+  return clampInt(n);
 }
-
-// React-facing hook with selector
-export function useMedStore<T = StoreState>(
-  db: Firestore,
-  selector?: (s: StoreState) => T,
-  equals?: (a: T, b: T) => boolean
-): T {
-  const get = () =>
-    selector ? selector(getSnapshot()) : (getSnapshot() as unknown as T);
-  const subscribeFn = (cb: () => void) => subscribe(db, cb);
-  // Stable compare to avoid useless renders when selecting slices
-  const selected = useSyncExternalStore(subscribeFn, get, get);
-  // Optional shallow equality for derived objects
-  return equals ? useMemo(() => selected, [selected]) : selected;
-}
-
-// tiny helper for common selectors
-export const selectors = {
-  all: (s: StoreState) => s.meds,
-  byId: (id: string) => (s: StoreState) => s.byId.get(id),
-  status: (s: StoreState) => ({ status: s.status, lastUpdated: s.lastUpdated }),
-};

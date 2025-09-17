@@ -1,23 +1,12 @@
 // src/hooks/useOrders.ts
 
-import { db } from "../services/firebase";
-import { selectors, useMedStore } from "../services/medsService";
-import { orderSelectors, useOrderService } from "../services/orderService";
-import { OrderDoc } from "../types/Order";
+import { useOrderContext } from "../contexts/OrdersContext";
 
-export function useOrder(orderId?: string): { order?: OrderDoc } {
-  if (orderId) {
-    return {
-      order: useOrderService(db, orderSelectors.byId(orderId)),
-    };
-  } else {
-    return {
-      order: useOrderService(db, orderSelectors.currentPending) ?? undefined,
-    };
-  }
+export function useOrders() {
+  const { orders, loading, error } = useOrderContext();
+  return { orders, loading, error };
 }
-
-export default function useOrders(): { orders: OrderDoc[] } {
-  const newest = useOrderService(db, orderSelectors.newestFirst);
-  return { orders: newest };
+export function useOrder(id: string) {
+  const { getById } = useOrderContext();
+  return { med: getById(id) };
 }

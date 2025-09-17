@@ -1,13 +1,12 @@
 // src/hooks/useMeds.ts
 
-import { db } from "../services/firebase";
-import { selectors, useMedStore } from "../services/medsService";
-import { MedDoc } from "../types/Med";
+import { useMedContext } from "../contexts/MedsContext";
 
-export function useMed(medId: string): { med?: MedDoc } {
-  return { med: useMedStore(db, selectors.byId(medId)) };
+export function useMeds() {
+  const { meds, loading, error } = useMedContext();
+  return { meds, loading, error };
 }
-
-export default function useMeds(): { meds: MedDoc[] } {
-  return { meds: useMedStore(db, selectors.all) };
+export function useMed(id: string) {
+  const { getById } = useMedContext();
+  return { med: getById(id) };
 }

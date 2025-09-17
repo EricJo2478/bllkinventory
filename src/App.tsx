@@ -20,7 +20,7 @@ export default function App() {
   }
 
   if (user === null) {
-    <LoginForm />;
+    return <LoginForm />;
   }
 
   return (

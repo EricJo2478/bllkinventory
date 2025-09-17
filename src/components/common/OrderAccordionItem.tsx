@@ -7,10 +7,11 @@ import {
   useAccordionButton,
 } from "react-bootstrap";
 import { useEffect, useState } from "react";
-import { updateDoc } from "firebase/firestore";
-import { OrderDoc, orderStatus } from "../../types/Order";
+import { OrderDoc, OrderStatus } from "../../types/Order";
 import { useMed } from "../../hooks/useMeds";
 import HoverTooltip from "./HoverTooltip";
+import { db } from "../../services/firebase";
+import { setOrderStatus } from "../../services/orderService";
 
 // order display component
 export default function OrderAccordionItem({
@@ -20,73 +21,78 @@ export default function OrderAccordionItem({
   order: OrderDoc;
   eventKey: string;
 }) {
-  const [status, setStatus] = useState<orderStatus>(order.status);
+  const [status, setStatus] = useState<OrderStatus>(order.status);
 
   useEffect(() => setStatus(order.status), [order.status]);
 
-  const onReceive = () => {};
+  // service-backed mutation (no firestore calls here)
+  const onReceive = async () => {
+    // optimistic update; revert if it fails
+    const prev = status;
+    setStatus("received");
+    try {
+      await setOrderStatus(db, order.id, "received");
+    } catch {
+      setStatus(prev);
+    }
+  };
 
-  if (Object.values(order.meds)[0].id === undefined) {
-    return false;
-  }
+  // guard: if no meds, render nothing
+  const medsArray = Object.values(order.lines ?? []);
+  if (medsArray.length === 0) return null;
 
   return (
     <Card>
       <OrderHeader
         title={order.date.toDate().toDateString()}
         status={status}
-        disableButton={
-          // disable button if the order is received or pending
-          status === "received" || status === "pending"
-        }
+        disableButton={status === "received" || status === "pending"}
         onButtonClick={onReceive}
         eventKey={eventKey}
       />
       <Accordion.Collapse eventKey={eventKey}>
         <Card.Body>
-          {
-            // iterate through the order content and render as p elements
-            Object.values(order.meds).map((entry, index) => {
-              const { med } = useMed(entry.id);
-              return (
-                <p key={index} className="mb-0">
-                  {"x" + entry.amount + " " + med?.name}
-                </p>
-              );
-            })
-          }
+          {medsArray.map((entry) => (
+            <OrderLine key={entry.id} id={entry.id} amount={entry.quantity} />
+          ))}
         </Card.Body>
       </Accordion.Collapse>
     </Card>
   );
 }
 
-interface ModalProps {
-  handleClose: () => void;
-  onReceive: Function;
+/** Child row so we can safely call a hook per line (no hooks in loops). */
+function OrderLine({ id, amount }: { id: string; amount: number }) {
+  const { med } = useMed(id);
+  return (
+    <p className="mb-0">{"x" + amount + " " + (med?.name ?? "Unknown")}</p>
+  );
 }
 
-// modal to confirm an order should be marked received
-function RecieveModal({ handleClose, onReceive }: ModalProps) {
+interface ModalProps {
+  handleClose: () => void;
+  onReceive: () => void;
+}
+
+// ✅ spelling fix: ReceiveModal
+function ReceiveModal({ handleClose, onReceive }: ModalProps) {
   return (
     <Modal show onHide={handleClose}>
       <Modal.Header closeButton>
         <Modal.Title>
-          Are you sure you want to receive this order? Cannot Undo
+          Are you sure you want to mark this order as received? Cannot undo.
         </Modal.Title>
       </Modal.Header>
       <Modal.Footer>
-        {/* button to mark order received and close modal */}
         <Button
           variant="primary"
           onClick={() => {
-            handleClose(), onReceive();
+            handleClose();
+            onReceive();
           }}
         >
           Receive
         </Button>
-
-        {/* button to close modal */}
         <Button variant="secondary" onClick={handleClose}>
           Cancel
         </Button>
@@ -97,9 +103,9 @@ function RecieveModal({ handleClose, onReceive }: ModalProps) {
 
 interface HeaderProps {
   title: string;
-  status: orderStatus;
+  status: OrderStatus;
   eventKey: string;
-  onButtonClick: (e: any) => void;
+  onButtonClick: () => void;
   disableButton: boolean;
 }
 
@@ -111,21 +117,20 @@ function OrderHeader({
   onButtonClick,
   disableButton,
 }: HeaderProps) {
-  // state to track receive confirmation modal visibility
   const [show, setShow] = useState(false);
-
-  // use accordion event for accordion functionality
   const onClick = useAccordionButton(eventKey);
 
-  // get the hover tooltip for the badge
-  const tooltipTexts = {
-    ordered: "This order is on it's way but hasn't been marked arrived",
-    received: "This order was marked arrived",
-    zeroed: "This order is old but was never marked arrived",
-    pending: "This order is for the future, it has not been sent yet",
+  const tooltipTexts: Record<OrderStatus, string> = {
+    ordered: "This order is on its way but hasn't been marked as arrived.",
+    received: "This order was marked as arrived.",
+    zeroed: "This order is old but was never marked as arrived.",
+    pending: "This order is for the future; it has not been sent yet.",
   };
 
-  const badgeColors = {
+  const badgeColors: Record<
+    OrderStatus,
+    "secondary" | "success" | "warning" | "info"
+  > = {
     ordered: "secondary",
     received: "success",
     zeroed: "warning",
@@ -134,34 +139,23 @@ function OrderHeader({
 
   return (
     <>
-      {
-        // show receive modal if modal visiblity is true
-        show && (
-          <RecieveModal
-            handleClose={() => setShow(false)}
-            onReceive={onButtonClick}
-          ></RecieveModal>
-        )
-      }
+      {show && (
+        <ReceiveModal
+          handleClose={() => setShow(false)}
+          onReceive={onButtonClick}
+        />
+      )}
       <Card.Header>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <div className="d-flex justify-content-between align-items-center">
           <div onClick={onClick} style={{ flexGrow: 1, cursor: "pointer" }}>
-            {/*  display date as the header content */}
             {title}
-            {/* badge displaying order status using the corisponding colour */}
             <HoverTooltip text={tooltipTexts[status]}>
-              <Badge bg={badgeColors[status]} className="ms-3">
+              <Badge bg={badgeColors[status]} className="ms-3 text-uppercase">
                 {status}
               </Badge>
             </HoverTooltip>
           </div>
-          <HoverTooltip text="Click me to mark that this order has arrived">
+          <HoverTooltip text="Click to mark this order as received">
             <Button
               disabled={disableButton}
               variant={disableButton ? "secondary" : "primary"}

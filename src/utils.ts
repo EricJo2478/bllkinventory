@@ -3,15 +3,21 @@
 import { Timestamp } from "firebase/firestore";
 
 // date constants
-export const today = () => new Date();
+export const today = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 export const expiryDay = () => {
   const d = new Date();
-  d.setDate(d.getDate() + 13);
+  d.setDate(d.getDate() + 14);
+  d.setHours(0, 0, 0, 0);
   return d;
 };
 export const monday = () => {
   const d = new Date();
   d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7));
+  d.setHours(0, 0, 0, 0);
   return d;
 };
 
@@ -49,4 +55,21 @@ export function toTimestamp(d: Date | Timestamp | string): Timestamp {
   if (d instanceof Timestamp) return d;
   const date = typeof d === "string" ? new Date(d) : d;
   return Timestamp.fromDate(date);
+}
+
+export function clampInt(n: unknown, fallback: number = 0): number {
+  const x = Math.floor(Number(n));
+  return Number.isFinite(x) && x >= 0 ? x : fallback;
+}
+
+export function startOfLocalDay(d: Date | Timestamp | string): Date {
+  const base =
+    d instanceof Timestamp
+      ? d.toDate()
+      : typeof d === "string"
+      ? new Date(d)
+      : d;
+  const copy = new Date(base);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
 }

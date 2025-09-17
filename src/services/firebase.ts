@@ -1,7 +1,11 @@
 // src/services/firebase.ts
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { enableIndexedDbPersistence, getFirestore } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
+import {
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider,
+} from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -13,7 +17,6 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-enableIndexedDbPersistence(db).catch(() => {});

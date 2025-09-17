@@ -1,24 +1,20 @@
 // src/pages/SubmitPage.tsx
-
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  query,
-  updateDoc,
-  where,
-} from "firebase/firestore";
 import { Button, Col, FloatingLabel, Form, Row } from "react-bootstrap";
 import { MedDoc } from "../types/Med";
-import { db } from "../services/firebase";
-import useMeds from "../hooks/useMeds";
-import { monday } from "../utils";
+import { useMeds } from "../hooks/useMeds";
 import HoverTooltip from "../components/common/HoverTooltip";
 
-function FormField({ med }: { med: MedDoc }) {
+import { useState, useMemo, JSX } from "react";
+
+function FormField({
+  med,
+  value,
+  onChange,
+}: {
+  med: MedDoc;
+  value: number;
+  onChange: (next: number) => void;
+}) {
   return (
     <Col>
       <Form.Group className="w-100 mb-3" as={Row}>
@@ -28,7 +24,15 @@ function FormField({ med }: { med: MedDoc }) {
           label={med.name}
           className="mb-3 w-50"
         >
-          <Form.Control type="number" placeholder="" />
+          <Form.Control
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            placeholder=""
+            value={Number.isFinite(value) ? value : 0}
+            onChange={(e) => onChange(clampInt(e.target.value))}
+          />
         </FloatingLabel>
       </Form.Group>
     </Col>
@@ -38,76 +42,62 @@ function FormField({ med }: { med: MedDoc }) {
 export default function ManualForm() {
   const { meds } = useMeds();
 
+  // local state: medId -> quantity
+  const [qty, setQty] = useState<Record<string, number>>({});
+
+  const setOne = (id: string, n: number) => setQty((q) => ({ ...q, [id]: n }));
+
+  const clearAll = () => setQty({});
+
+  const ordered = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(qty).filter(([, v]) => Number.isFinite(v) && v > 0)
+      ),
+    [qty]
+  );
+
   const handleDelayedOrder = async () => {
-    const ordered: Record<string, number> = {};
-    for (const med of meds) {
-      const element = document.getElementById(
-        "form" + med.id
-      ) as HTMLInputElement;
-      const value = parseInt(element.value);
-
-      if (value > 0) {
-        ordered[med.id] = value;
-      }
-      element.value = "";
-    }
-    const ref = collection(db, "orders");
-    const q = query(ref, where("status", "==", "pending"), limit(1));
-    const docs = (await getDocs(q)).docs;
-    if (docs.length > 0) {
-      const id = docs[0].id;
-      const meds = docs[0].data().meds as { id: string; amount: number }[];
-      const medData = Object.entries(ordered).map((entry) => {
-        return { id: entry[0], amount: entry[1] };
-      });
-      medData.forEach((entry) => {
-        const index = meds.findIndex((item) => item.id === entry.id);
-        if (index < 0) {
-          meds.push(entry);
-        } else {
-          meds[index].amount = meds[index].amount + entry.amount;
-        }
-      });
-
-      updateDoc(doc(collection(db, "orders"), id), { meds: meds });
-    } else {
-      console.log("new order");
-      const medData = Object.entries(ordered).map((entry) => {
-        return { id: entry[0], amount: entry[1] };
-      });
-      addDoc(collection(db, "orders"), {
-        status: "pending",
-        meds: medData,
-        date: monday,
-      });
-    }
-  };
-  const handleInstantOrder = () => {
-    handleDelayedOrder();
-    fetch(
-      "https://script.google.com/macros/s/AKfycbytzNY1-2wxFBA5thGS6wyh9KbATV3zY1EH4eEPuQ_PMTZL1udBZFRCDLearabBLi7O5w/exec"
-    );
+    //await addToPendingOrder(ordered);
+    clearAll();
   };
 
-  const render = () => {
-    const contents = [];
-    for (let index = 0; index < meds.length; index += 2) {
-      contents.push(
-        <Row key={meds[index].id}>
-          <FormField med={meds[index]} />
-          {index + 1 < meds.length && <FormField med={meds[index + 1]} />}
+  const handleInstantOrder = async () => {
+    //await addToPendingAndSubmitNow(ordered);
+    clearAll();
+  };
+
+  // render two columns per row
+  const renderRows = () => {
+    const rows: JSX.Element[] = [];
+    for (let i = 0; i < meds.length; i += 2) {
+      rows.push(
+        <Row key={meds[i].id}>
+          <FormField
+            med={meds[i]}
+            value={qty[meds[i].id] ?? 0}
+            onChange={(n) => setOne(meds[i].id, n)}
+          />
+          {i + 1 < meds.length && (
+            <FormField
+              med={meds[i + 1]}
+              value={qty[meds[i + 1].id] ?? 0}
+              onChange={(n) => setOne(meds[i + 1].id, n)}
+            />
+          )}
         </Row>
       );
     }
-    return contents;
+    return rows;
   };
 
   return (
     <Form className="ms-3">
-      {render()}
+      {renderRows()}
+
       <HoverTooltip
         placement="top"
-        text="Will add the above amounts to the order on Monday morning."
+        text="Adds the entered amounts to the Pending order (for Monday)."
       >
         <Button
           className="ms-3"
@@ -118,9 +108,10 @@ export default function ManualForm() {
           Add To Next Order
         </Button>
       </HoverTooltip>
+
       <HoverTooltip
         placement="top"
-        text="Will add some automatic meds to the order and submit immediately."
+        text="Adds the amounts and submits immediately (server-side)."
       >
         <Button
           className="ms-3"
@@ -133,4 +124,11 @@ export default function ManualForm() {
       </HoverTooltip>
     </Form>
   );
+}
+
+// utils
+function clampInt(v: string | number): number {
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.floor(n);
 }

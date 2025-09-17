@@ -19,7 +19,7 @@ export default function NavBar() {
       <Container className="ms-1">
         {/* Brand (link to home) */}
         <LinkContainer to="/">
-          <Navbar.Brand>Bllk Inventory</Navbar.Brand>
+          <Navbar.Brand>Bllk Inventory v5</Navbar.Brand>
         </LinkContainer>
         <Navbar.Toggle aria-controls="main-navbar" />
         <Navbar.Collapse id="main-navbar">

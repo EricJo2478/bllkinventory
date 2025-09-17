@@ -2,11 +2,18 @@
 
 import { Timestamp } from "firebase/firestore";
 
-export type orderStatus = "pending" | "ordered" | "zeroed" | "received";
+export type OrderStatus = "pending" | "ordered" | "zeroed" | "received";
 
 export interface OrderDoc {
   id: string;
-  status: orderStatus;
+  status: OrderStatus;
   date: Timestamp;
-  meds: { id: string; amount: number }[];
+  lines: LineDoc[];
+  updatedAt: Timestamp;
+}
+
+export interface LineDoc {
+  id: string;
+  quantity: number;
+  updatedAt: Timestamp;
 }
