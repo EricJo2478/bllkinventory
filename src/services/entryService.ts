@@ -9,6 +9,9 @@ import {
   serverTimestamp,
   writeBatch,
   deleteField,
+  query,
+  orderBy,
+  getDocs,
 } from "firebase/firestore";
 import { clampInt, startOfLocalDay, toTimestamp } from "../utils";
 import { db } from "./firebase";
@@ -76,4 +79,40 @@ function normalizeInput(input: UpsertEntryInput) {
     date: toTimestamp(startOfLocalDay(input.date ?? "")),
     amount: clampInt(input.amount),
   };
+}
+
+export async function consumeFromEntries(medId: string, qty: number) {
+  let remaining = Math.max(0, Math.floor(qty));
+  if (remaining === 0) return;
+
+  // Oldest → newest; entries with no date go last (by ordering client-side if needed)
+  const q = query(
+    collection(db, "meds", medId, "entries"),
+    orderBy("date", "asc")
+  );
+  const snap = await getDocs(q);
+
+  const batch = writeBatch(db);
+
+  for (const d of snap.docs) {
+    if (remaining <= 0) break;
+    const data = d.data() as { amount?: number; date?: any };
+    const current = Math.max(0, Math.floor(Number(data.amount ?? 0)));
+    if (current <= 0) continue;
+
+    if (current <= remaining) {
+      // consume all and delete row
+      batch.delete(doc(db, "meds", medId, "entries", d.id));
+      remaining -= current;
+    } else {
+      // partial consume
+      batch.update(doc(db, "meds", medId, "entries", d.id), {
+        amount: current - remaining,
+        updatedAt: serverTimestamp(),
+      });
+      remaining = 0;
+    }
+  }
+
+  await batch.commit();
 }

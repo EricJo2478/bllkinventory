@@ -70,19 +70,21 @@ export default function ManualForm() {
   // render two columns per row
   const renderRows = () => {
     const rows: JSX.Element[] = [];
-    for (let i = 0; i < meds.length; i += 2) {
+    const formMeds = meds.filter((med) => med.formName);
+    for (let i = 0; i < formMeds.length; i += 2) {
+      console.log(formMeds[i].formName);
       rows.push(
-        <Row key={meds[i].id}>
+        <Row key={formMeds[i].id}>
           <FormField
-            med={meds[i]}
-            value={qty[meds[i].id] ?? 0}
-            onChange={(n) => setOne(meds[i].id, n)}
+            med={formMeds[i]}
+            value={qty[formMeds[i].id] ?? 0}
+            onChange={(n) => setOne(formMeds[i].id, n)}
           />
-          {i + 1 < meds.length && (
+          {i + 1 < formMeds.length && (
             <FormField
-              med={meds[i + 1]}
-              value={qty[meds[i + 1].id] ?? 0}
-              onChange={(n) => setOne(meds[i + 1].id, n)}
+              med={formMeds[i + 1]}
+              value={qty[formMeds[i + 1].id] ?? 0}
+              onChange={(n) => setOne(formMeds[i + 1].id, n)}
             />
           )}
         </Row>

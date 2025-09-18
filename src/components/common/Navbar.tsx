@@ -31,9 +31,9 @@ export default function NavBar() {
             <LinkContainer to="/orders">
               <Nav.Link>Orders</Nav.Link>
             </LinkContainer>
-            <LinkContainer to="/submit">
+            {/* <LinkContainer to="/submit">
               <Nav.Link>Submit</Nav.Link>
-            </LinkContainer>
+            </LinkContainer> */}
           </Nav>
 
           {/* Right side auth actions */}

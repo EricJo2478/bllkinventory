@@ -15,6 +15,10 @@ export interface MedDoc {
   max?: number;
   min?: number;
   pkg?: number;
+  gtin?: string;
+  unitBarcodes?: string[];
+  packBarcodes?: string[];
+  barcodes?: string[];
 }
 
 export interface EntryDoc {

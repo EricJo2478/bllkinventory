@@ -23,9 +23,16 @@ export default function MedCard({ med }: Props) {
     const cutoff = expiryDay();
     const list = Array.isArray(med.entries) ? med.entries : [];
     return list.reduce((sum, e) => {
-      const d =
-        e.date instanceof Timestamp ? e.date.toDate() : new Date(e.date as any);
-      return d >= cutoff ? sum + (e.amount || 0) : sum;
+      if (e.date) {
+        const d =
+          e.date instanceof Timestamp
+            ? e.date.toDate()
+            : new Date(e.date as any);
+
+        return d >= cutoff ? sum + (e.amount || 0) : sum;
+      } else {
+        return sum + (e.amount || 0);
+      }
     }, 0);
   }, [med.entries]);
 
@@ -46,11 +53,6 @@ export default function MedCard({ med }: Props) {
           {/* Title */}
           <Card.Title className="d-flex justify-content-between align-items-center">
             <span>{med.name}</span>
-            {med.aliasOf && (
-              <Badge bg="secondary" title={`Alias of ${med.aliasOf}`}>
-                ALIAS
-              </Badge>
-            )}
           </Card.Title>
 
           {/* Subtitle: Total & On order */}
