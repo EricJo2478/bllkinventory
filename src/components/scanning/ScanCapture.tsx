@@ -14,7 +14,11 @@ export default function ScanCapture() {
     setOpen(true);
   }, []);
 
-  useKeyboardScanner({ onScan });
+  useKeyboardScanner({
+    onScan: onScan,
+    prefixKey: "F9",
+    suffixKey: "Enter",
+  });
 
   return (
     <ScanModal

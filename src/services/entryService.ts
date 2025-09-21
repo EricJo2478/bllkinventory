@@ -12,6 +12,8 @@ import {
   query,
   orderBy,
   getDocs,
+  runTransaction,
+  where,
 } from "firebase/firestore";
 import { clampInt, startOfLocalDay, toTimestamp } from "../utils";
 import { db } from "./firebase";
@@ -79,6 +81,71 @@ function normalizeInput(input: UpsertEntryInput) {
     date: toTimestamp(startOfLocalDay(input.date ?? "")),
     amount: clampInt(input.amount),
   };
+}
+
+/** Normalize a Date/string/Timestamp to local midnight. */
+function toLocalMidnight(d: Date | string | Timestamp): Date {
+  const dt = d instanceof Timestamp ? d.toDate() : new Date(d);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+}
+
+/**
+ * Add or increment an entry for a given expiry date.
+ * - If an entry exists with the same `date` (normalized) => increment its amount
+ * - Otherwise create a new entry
+ */
+export async function addOrIncrementEntry(
+  medId: string,
+  opts: {
+    date?: Date | string | Timestamp | null;
+    amount: number;
+    staffInitials?: string | null;
+  }
+) {
+  const amount = Math.max(0, Math.floor(opts.amount ?? 0));
+  if (amount <= 0) return;
+
+  // When date is omitted/null, just create a new row (or you can also merge null-dated entries—see note below)
+  if (!opts.date) {
+    await addDoc(collection(db, "meds", medId, "entries"), {
+      amount,
+      date: null,
+      staffInitials: opts.staffInitials ?? null,
+      updatedAt: serverTimestamp(),
+    });
+    return;
+  }
+
+  const midnight = toLocalMidnight(opts.date);
+  const ts = Timestamp.fromDate(midnight);
+
+  await runTransaction(db, async (tx) => {
+    const coll = collection(db, "meds", medId, "entries");
+    // Exact Timestamp equality works, as long as you always normalize to midnight
+    const snap = await getDocs(query(coll, where("date", "==", ts)));
+
+    if (!snap.empty) {
+      // increment the first match (you can decide to merge all matches if duplicates exist)
+      const docRef = snap.docs[0].ref;
+      const current = Math.max(
+        0,
+        Math.floor(Number(snap.docs[0].data().amount ?? 0))
+      );
+      tx.update(docRef, {
+        amount: current + amount,
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      const newRef = doc(coll); // pre-create id so we can use tx.set if you prefer
+      tx.set(newRef, {
+        amount,
+        date: ts,
+        staffInitials: opts.staffInitials ?? null,
+        updatedAt: serverTimestamp(),
+      });
+    }
+  });
 }
 
 export async function consumeFromEntries(medId: string, qty: number) {

@@ -4,7 +4,11 @@ import { Modal, Button, Form, InputGroup, Badge } from "react-bootstrap";
 import { Timestamp } from "firebase/firestore";
 import { MedDoc } from "../../types/Med";
 import { ParsedScan, parseScan } from "../../services/barcode";
-import { addEntry, consumeFromEntries } from "../../services/entryService";
+import {
+  addEntry,
+  addOrIncrementEntry,
+  consumeFromEntries,
+} from "../../services/entryService";
 
 type Props = {
   show: boolean;
@@ -79,7 +83,7 @@ export default function ScanModal({ show, onHide, meds, raw }: Props) {
   async function doSignIn() {
     if (!selected || !validQty) return;
     const date = dateStr ? Timestamp.fromDate(parseDate(dateStr)) : undefined;
-    await addEntry(selected.id, { amount: qty, date }); // service already handles optional date
+    await addOrIncrementEntry(selected.id, { amount: qty, date });
     onHide();
   }
 
