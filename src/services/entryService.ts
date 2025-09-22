@@ -14,22 +14,25 @@ import {
   getDocs,
   runTransaction,
   where,
+  setDoc,
 } from "firebase/firestore";
-import { clampInt, startOfLocalDay, toTimestamp } from "../utils";
+import {
+  clampInt,
+  startOfLocalDay,
+  toDateKeyISO,
+  toLocalMidnight,
+  toTimestamp,
+} from "../utils";
 import { db } from "./firebase";
 
 export type UpsertEntryInput = {
   date?: Date | Timestamp | string | null; // now optional
   amount: number;
-  sessionId?: string | null;
-  staffInitials?: string | null;
 };
 
 export async function addEntry(medId: string, input: UpsertEntryInput) {
   const payload: any = {
     amount: clampInt(input.amount),
-    sessionId: input.sessionId ?? null,
-    staffInitials: input.staffInitials ?? null,
     updatedAt: serverTimestamp(),
   };
   if (input.date) {
@@ -83,13 +86,6 @@ function normalizeInput(input: UpsertEntryInput) {
   };
 }
 
-/** Normalize a Date/string/Timestamp to local midnight. */
-function toLocalMidnight(d: Date | string | Timestamp): Date {
-  const dt = d instanceof Timestamp ? d.toDate() : new Date(d);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
-}
-
 /**
  * Add or increment an entry for a given expiry date.
  * - If an entry exists with the same `date` (normalized) => increment its amount
@@ -117,7 +113,7 @@ export async function addOrIncrementEntry(
     return;
   }
 
-  const midnight = toLocalMidnight(opts.date);
+  const midnight = toLocalMidnight(opts.date) as Date;
   const ts = Timestamp.fromDate(midnight);
 
   await runTransaction(db, async (tx) => {
@@ -182,4 +178,127 @@ export async function consumeFromEntries(medId: string, qty: number) {
   }
 
   await batch.commit();
+}
+
+function datedEntryRef(medId: string, d: Date) {
+  const key = toDateKeyISO(d);
+  return doc(db, "meds", medId, "entries", key);
+}
+
+/**
+ * Move an entry's date (and effectively its document) safely.
+ *
+ * - If `toDate` is a Date/Timestamp/string → moves/merges into deterministic id `entries/YYYY-MM-DD`.
+ * - If `toDate` is null/undefined → moves into a NEW undated auto-ID doc (keeps multiple undated entries).
+ * - If merging into an existing dated doc, amounts are added together.
+ * - Source doc is deleted at the end (atomic via transaction).
+ *
+ * @param medId        parent medication id
+ * @param fromEntryId  current entry doc id (can be deterministic "YYYY-MM-DD" or an auto-ID)
+ * @param toDate       new date (`Date` | `Timestamp` | ISO string) or `null` for undated
+ */
+export async function moveEntryDate(
+  medId: string,
+  fromEntryId: string,
+  toDate: Date | string | Timestamp | null | undefined
+) {
+  const fromRef = doc(db, "meds", medId, "entries", fromEntryId);
+
+  await runTransaction(db, async (tx) => {
+    const fromSnap = await tx.get(fromRef);
+    if (!fromSnap.exists()) return;
+
+    const data = fromSnap.data() as {
+      amount?: number;
+      date?: Timestamp | null;
+      staffInitials?: string | null;
+      sessionId?: string | null;
+    };
+
+    const amount = Math.max(0, Math.floor(Number(data.amount ?? 0)));
+    const staffInitials = data.staffInitials ?? null;
+    const sessionId = data.sessionId ?? null;
+
+    // If nothing to move, just delete (or early return).
+    if (amount <= 0) {
+      tx.delete(fromRef);
+      return;
+    }
+
+    const targetDate = toLocalMidnight(toDate ?? null);
+
+    if (targetDate) {
+      // DATED TARGET: upsert/merge into deterministic doc id
+      const toRef = datedEntryRef(medId, targetDate);
+      const toSnap = await tx.get(toRef);
+
+      if (toSnap.exists()) {
+        const prev = Math.max(
+          0,
+          Math.floor(Number(toSnap.data()?.amount ?? 0))
+        );
+        tx.set(
+          toRef,
+          {
+            amount: prev + amount,
+            date: Timestamp.fromDate(targetDate),
+            // keep existing staffInitials/sessionId in the target (don't overwrite),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } else {
+        // New dated doc: carry over staff/session
+        tx.set(toRef, {
+          amount,
+          date: Timestamp.fromDate(targetDate),
+          staffInitials,
+          sessionId,
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      // Remove the old doc
+      tx.delete(fromRef);
+      return;
+    }
+
+    // UNDATED TARGET: create a NEW auto-ID doc (allow multiple undated entries)
+    const newUndatedRef = doc(collection(db, "meds", medId, "entries"));
+    tx.set(newUndatedRef, {
+      amount,
+      date: null,
+      staffInitials,
+      sessionId,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Remove the old doc
+    tx.delete(fromRef);
+  });
+}
+/** Set an exact amount for an entry row.
+ * - For dated rows (id = "YYYY-MM-DD"), also keeps the `date` field aligned (local midnight).
+ * - For undated auto-ID rows, prefer `updateEntry` (EntryField already does that).
+ */
+export async function setEntryAmount(
+  medId: string,
+  entryId: string, // "YYYY-MM-DD" for dated deterministic rows
+  amount: number
+) {
+  const amt = Math.max(0, Math.floor(Number(amount) || 0));
+  const ref = doc(db, "meds", medId, "entries", entryId);
+  const isDated = /^\d{4}-\d{2}-\d{2}$/.test(entryId);
+
+  await setDoc(
+    ref,
+    {
+      amount: amt,
+      ...(isDated
+        ? { date: Timestamp.fromDate(toLocalMidnight(entryId) as Date) }
+        : {}), // undated rows shouldn't hit this path in normal UI
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
 }

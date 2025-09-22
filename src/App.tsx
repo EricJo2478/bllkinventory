@@ -6,6 +6,8 @@ import LoginForm from "./components/auth/LoginForm";
 import { PageLayout } from "./components/common/Navbar";
 import { Route, Routes } from "react-router-dom";
 import ScanCapture from "./components/scanning/ScanCapture";
+import CommandBarcodeSheet from "./pages/CommandBarcodeSheet";
+import MedBarcodeSheetCompact from "./pages/MedBarcodeSheet";
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -28,6 +30,8 @@ export default function App() {
     <>
       <ScanCapture />
       <Routes>
+        <Route path="/cmd-barcodes" element={<CommandBarcodeSheet />} />
+        <Route path="/med-barcodes" element={<MedBarcodeSheetCompact />} />
         <Route
           path="/"
           element={

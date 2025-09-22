@@ -73,3 +73,19 @@ export function startOfLocalDay(d: Date | Timestamp | string): Date {
   copy.setHours(0, 0, 0, 0);
   return copy;
 }
+
+export function toLocalMidnight(
+  d?: Date | string | Timestamp | null
+): Date | null {
+  if (!d) return null;
+  const dt = d instanceof Timestamp ? d.toDate() : new Date(d);
+  dt.setHours(0, 0, 0, 0);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+export function toDateKeyISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}

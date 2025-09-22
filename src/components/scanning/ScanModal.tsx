@@ -1,36 +1,39 @@
 // src/components/scanning/ScanModal.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Modal, Button, Form, InputGroup, Badge } from "react-bootstrap";
-import { Timestamp } from "firebase/firestore";
-import { MedDoc } from "../../types/Med";
-import { ParsedScan, parseScan } from "../../services/barcode";
+import type { MedDoc } from "../../types/Med";
+import type { ParsedScan } from "../../services/barcode";
+import { parseScan } from "../../services/barcode";
 import {
-  addEntry,
   addOrIncrementEntry,
   consumeFromEntries,
 } from "../../services/entryService";
+import type { Command } from "../../services/scannerCommands";
+import { parseCommand } from "../../services/scannerCommands";
 
 type Props = {
   show: boolean;
   onHide: () => void;
-  // supply your full med list (from MedContext) to resolve barcodes
   meds: MedDoc[];
-  // the raw scanned string
-  raw: string | null;
+  raw: string | null; // latest scanned string (command or product)
 };
 
 export default function ScanModal({ show, onHide, meds, raw }: Props) {
+  const [medId, setMedId] = useState<string | null>(null);
+  const [qtyStr, setQtyStr] = useState<string>("");
+  const [dateStr, setDateStr] = useState<string>(""); // ISO yyyy-mm-dd
+
+  // Parse product scans (commands handled separately)
   const parsed = useMemo<ParsedScan | null>(
     () => (raw ? parseScan(raw) : null),
     [raw]
   );
 
-  // Resolve to a med (by GS1 GTIN or plain barcode matches your stored fields)
+  // Candidate meds based on parsed code
   const candidates = useMemo(() => {
     if (!parsed) return [];
     const code = parsed.type === "gs1" ? parsed.gtin ?? "" : parsed.raw;
     if (!code) return [];
-    // your MedDoc might store barcodes like: { gtin?: string; unitBarcodes?: string[]; packBarcodes?: string[]; }
     return meds.filter(
       (m) =>
         m.gtin === code ||
@@ -40,60 +43,129 @@ export default function ScanModal({ show, onHide, meds, raw }: Props) {
     );
   }, [parsed, meds]);
 
-  const [medId, setMedId] = useState<string | null>(null);
-  const [qtyStr, setQtyStr] = useState<string>("");
-  const [dateStr, setDateStr] = useState<string>("");
+  const selected = useMemo(
+    () => meds.find((m) => m.id === medId),
+    [meds, medId]
+  );
 
-  // prefill based on parsed + med info (e.g., pack barcode → pkg)
+  // ----- Command handling (qty/date/buttons) -----
+  const applyCommand = useCallback(
+    (cmd: Command) => {
+      if (cmd.type === "QTY") {
+        if (cmd.value === "PKG") {
+          if (selected?.pkg) setQtyStr(String(selected.pkg));
+        } else {
+          setQtyStr(String(cmd.value));
+        }
+        return;
+      }
+
+      if (cmd.type === "DATE") {
+        const v: any = cmd.value;
+        if (v === "TODAY") {
+          setDateStr(formatDate(new Date()));
+          return;
+        }
+        if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+          setDateStr(v);
+          return;
+        }
+        if (typeof v === "string" && /^\+\d+$/.test(v)) {
+          const n = parseInt(v.slice(1), 10);
+          const d = new Date();
+          d.setDate(d.getDate() + n);
+          setDateStr(formatDate(d));
+          return;
+        }
+        if (v === "CLEAR") {
+          setDateStr("");
+          return;
+        }
+        return;
+      }
+
+      if (cmd.type === "BTN") {
+        if (cmd.which === "IN") return void doSignIn();
+        if (cmd.which === "OUT") return void doSignOut();
+        if (cmd.which === "CANCEL") return onHide();
+        if (cmd.which === "SUBMIT") return void doSignIn();
+      }
+    },
+    [selected, onHide] // setters are stable
+  );
+
+  // React to each new raw scan:
+  // - Commands handled here (don’t affect selection).
+  // - Product scans preset date/qty defaults.
   useEffect(() => {
-    if (!parsed) return;
-    // date
-    if (parsed.type === "gs1" && parsed.expiry) {
+    if (!raw) return;
+    const cmd = parseCommand(raw);
+    if (cmd) {
+      applyCommand(cmd);
+      return;
+    }
+    // Product scan: prefill
+    if (parsed?.type === "gs1" && parsed.expiry) {
       setDateStr(formatDate(parsed.expiry));
     } else {
-      setDateStr(""); // start blank if no expiry in code
+      setDateStr(""); // start blank when no expiry in barcode
     }
-    // qty default: if pack barcode matched, you could set med.pkg later after med pick
     setQtyStr("1");
-  }, [parsed]);
+  }, [raw, parsed, applyCommand]);
 
-  // default med if exactly one match
+  // Selection logic:
+  // - Command scans → no change.
+  // - Product with exactly 1 match → select it.
+  // - Otherwise (0 or >1) → clear.
   useEffect(() => {
+    if (!raw) return;
+    const cmd = parseCommand(raw);
+    if (cmd) return;
     if (candidates.length === 1) setMedId(candidates[0].id);
-  }, [candidates]);
+    else setMedId(null);
+  }, [raw, candidates]);
 
-  const selected = meds.find((m) => m.id === medId);
-
+  // If a plain pack barcode matched the selected med, default qty to pkg size
   useEffect(() => {
-    // If the scanned code matched a "pack" barcode on the selected med, default to pkg size
     if (!selected) return;
     if (parsed?.type === "plain") {
       const code = parsed.raw;
       const isPack = selected.packBarcodes?.includes?.(code);
-      if (isPack && selected.pkg && !isNaN(selected.pkg as any)) {
+      if (isPack && selected.pkg && !Number.isNaN(selected.pkg as any)) {
         setQtyStr(String(selected.pkg));
       }
     }
   }, [selected, parsed]);
 
+  // ----- Actions -----
   const qty = parseInt(qtyStr || "0", 10);
   const validQty = Number.isFinite(qty) && qty >= 0;
   const validDate = dateStr === "" || /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
 
   async function doSignIn() {
     if (!selected || !validQty) return;
-    const date = dateStr ? Timestamp.fromDate(parseDate(dateStr)) : undefined;
-    await addOrIncrementEntry(selected.id, { amount: qty, date });
+
+    // IMPORTANT: pass a JS Date (local midnight from ISO) or null.
+    // Your deterministic-ID addOrIncrementEntry will:
+    //  - coalesce & increment for dated (entries/YYYY-MM-DD)
+    //  - create a new auto-ID doc for undated
+    const date = dateStr ? parseDate(dateStr) : null;
+
+    await addOrIncrementEntry(selected.id, {
+      amount: qty,
+      date, // Date or null — service handles increment/merge
+    });
+
     onHide();
   }
 
   async function doSignOut() {
     if (!selected || !validQty) return;
-    // consume from earliest expiry first
     await consumeFromEntries(selected.id, qty);
     onHide();
   }
 
+  // ----- Render -----
   return (
     <Modal show={show} onHide={onHide} backdrop="static" keyboard>
       <Modal.Header closeButton>
@@ -102,8 +174,8 @@ export default function ScanModal({ show, onHide, meds, raw }: Props) {
           {parsed?.type === "gs1" && <Badge bg="secondary">GS1</Badge>}
         </Modal.Title>
       </Modal.Header>
+
       <Modal.Body>
-        {/* Med selector (auto-chosen if single match) */}
         <Form.Group className="mb-3">
           <Form.Label>Medication</Form.Label>
           <Form.Select
@@ -114,20 +186,33 @@ export default function ScanModal({ show, onHide, meds, raw }: Props) {
               Select a medication
             </option>
             {candidates.length > 0
-              ? candidates.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name}
-                  </option>
-                ))
+              ? candidates
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))
               : meds.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
                   </option>
                 ))}
           </Form.Select>
+
+          {/* Unknown / ambiguous product barcode hints */}
+          {raw && !parseCommand(raw) && parsed && candidates.length === 0 && (
+            <div className="text-danger small mt-2">
+              Unknown barcode. Please select a medication.
+            </div>
+          )}
+          {raw && !parseCommand(raw) && parsed && candidates.length > 1 && (
+            <div className="text-warning small mt-2">
+              Multiple matches. Please pick the correct medication.
+            </div>
+          )}
         </Form.Group>
 
-        {/* Qty + Date */}
         <InputGroup className="mb-3">
           <InputGroup.Text>Qty</InputGroup.Text>
           <Form.Control
@@ -147,13 +232,13 @@ export default function ScanModal({ show, onHide, meds, raw }: Props) {
           />
         </InputGroup>
 
-        {/* Raw code (debug) */}
         {raw && (
           <div className="text-muted small">
             Scanned: <code>{raw}</code>
           </div>
         )}
       </Modal.Body>
+
       <Modal.Footer>
         <Button variant="outline-secondary" onClick={onHide}>
           Cancel
@@ -177,14 +262,17 @@ export default function ScanModal({ show, onHide, meds, raw }: Props) {
   );
 }
 
+// ------- helpers -------
 function formatDate(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-function parseDate(s: string) {
-  const [y, m, d] = s.split("-").map((n) => parseInt(n, 10));
+
+function parseDate(iso: string) {
+  // ISO (yyyy-mm-dd) -> Date at local midnight
+  const [y, m, d] = iso.split("-").map((n) => parseInt(n, 10));
   const dt = new Date(y, (m || 1) - 1, d || 1);
   dt.setHours(0, 0, 0, 0);
   return dt;
