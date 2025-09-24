@@ -39,7 +39,7 @@ export default function ScanModal({ show, onHide, meds, raw }: Props) {
         m.gtin === code ||
         m.unitBarcodes?.includes(code) ||
         m.packBarcodes?.includes(code) ||
-        m.barcodes?.includes?.(code)
+        m.barcodes?.includes(code)
     );
   }, [parsed, meds]);
 
