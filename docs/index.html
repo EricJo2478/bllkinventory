@@ -5,7 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BLLK Inv</title>
-    <script type="module" crossorigin src="/assets/index-CpQuMmDv.js"></script>
+    <script>
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var p = params.get("p");
+    if (p) {
+      // put the original deep link back into the address bar
+      window.history.replaceState({}, "", p);
+    }
+  })();
+</script>
+    <script type="module" crossorigin src="/assets/index-CsaFp_2E.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-C11chwFa.css">
   </head>
   <body>
